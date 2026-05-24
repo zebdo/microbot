@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.shortestpath.pathfinder;
 
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.CollisionDataFlag;
 import net.runelite.api.TileObject;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.shortestpath.Transport;
@@ -19,6 +20,16 @@ public class CollisionMap {
 
     private final SplitFlagMap collisionData;
 
+    private volatile int[][][] liveFlags;
+    private volatile int liveBaseX, liveBaseY;
+    private static final int SCENE_SIZE = 104;
+
+    public void setLiveCollisionSnapshot(int[][][] flags, int baseX, int baseY) {
+        this.liveFlags = flags;
+        this.liveBaseX = baseX;
+        this.liveBaseY = baseY;
+    }
+
     public byte[] getPlanes() {
         return collisionData.getRegionMapPlaneCounts();
     }
@@ -32,18 +43,46 @@ public class CollisionMap {
     }
 
     public boolean n(int x, int y, int z) {
+        int[][][] live = liveFlags;
+        if (live != null && z >= 0 && z < live.length && live[z] != null) {
+            int sx = x - liveBaseX, sy = y - liveBaseY;
+            if (sx >= 0 && sx < SCENE_SIZE && sy >= 0 && sy < SCENE_SIZE) {
+                return (live[z][sx][sy] & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0;
+            }
+        }
         return get(x, y, z, 0);
     }
 
     public boolean s(int x, int y, int z) {
+        int[][][] live = liveFlags;
+        if (live != null && z >= 0 && z < live.length && live[z] != null) {
+            int sx = x - liveBaseX, sy = y - liveBaseY;
+            if (sx >= 0 && sx < SCENE_SIZE && sy >= 0 && sy < SCENE_SIZE) {
+                return (live[z][sx][sy] & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) == 0;
+            }
+        }
         return n(x, y - 1, z);
     }
 
     public boolean e(int x, int y, int z) {
+        int[][][] live = liveFlags;
+        if (live != null && z >= 0 && z < live.length && live[z] != null) {
+            int sx = x - liveBaseX, sy = y - liveBaseY;
+            if (sx >= 0 && sx < SCENE_SIZE && sy >= 0 && sy < SCENE_SIZE) {
+                return (live[z][sx][sy] & CollisionDataFlag.BLOCK_MOVEMENT_EAST) == 0;
+            }
+        }
         return get(x, y, z, 1);
     }
 
     public boolean w(int x, int y, int z) {
+        int[][][] live = liveFlags;
+        if (live != null && z >= 0 && z < live.length && live[z] != null) {
+            int sx = x - liveBaseX, sy = y - liveBaseY;
+            if (sx >= 0 && sx < SCENE_SIZE && sy >= 0 && sy < SCENE_SIZE) {
+                return (live[z][sx][sy] & CollisionDataFlag.BLOCK_MOVEMENT_WEST) == 0;
+            }
+        }
         return e(x - 1, y, z);
     }
 
@@ -147,8 +186,7 @@ public class CollisionMap {
             {3141, 3456, 0}, {3142, 3456, 0}, {2744, 3153, 0}, {2745, 3153, 0},
             {3674, 3882, 0}, {3673, 3884, 0}, {3673, 3885, 0}, {3673, 3886, 0},
             {3672, 3888, 0}, {3675, 3893, 0}, {3678, 3893, 0}, {3684, 3845, 0},
-            {3670, 3836, 0}, {3672, 3862, 0},
-            {1621, 3822, 1},
+            {3670, 3836, 0}, {3672, 3862, 0}
         };
         Set<Integer> set = new HashSet<>(coords.length * 2);
         for (int[] c : coords) {
