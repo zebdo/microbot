@@ -393,23 +393,61 @@ public abstract class Rs2Tile implements Tile {
 
             if (dist >= distance) continue;
 
-            if ((data & CollisionDataFlag.BLOCK_MOVEMENT_EAST) == 0) {
+            final boolean canE = (data & CollisionDataFlag.BLOCK_MOVEMENT_EAST) == 0;
+            final boolean canW = (data & CollisionDataFlag.BLOCK_MOVEMENT_WEST) == 0;
+            final boolean canN = (data & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0;
+            final boolean canS = (data & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) == 0;
+
+            if (canE) {
                 WorldPoint neighbor = point.dx(1);
                 if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
                     queue.add(neighbor);
             }
-            if ((data & CollisionDataFlag.BLOCK_MOVEMENT_WEST) == 0) {
+            if (canW) {
                 WorldPoint neighbor = point.dx(-1);
                 if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
                     queue.add(neighbor);
             }
-            if ((data & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0) {
+            if (canN) {
                 WorldPoint neighbor = point.dy(1);
                 if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
                     queue.add(neighbor);
             }
-            if ((data & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) == 0) {
+            if (canS) {
                 WorldPoint neighbor = point.dy(-1);
+                if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
+                    queue.add(neighbor);
+            }
+
+            if (canN && canE && isWithinBounds(sx + 1, sy) && isWithinBounds(sx, sy + 1) && isWithinBounds(sx + 1, sy + 1)
+                    && (flags[sx + 1][sy] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_NORTH)) == 0
+                    && (flags[sx][sy + 1] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_EAST)) == 0
+                    && (flags[sx + 1][sy + 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0) {
+                WorldPoint neighbor = new WorldPoint(point.getX() + 1, point.getY() + 1, point.getPlane());
+                if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
+                    queue.add(neighbor);
+            }
+            if (canN && canW && isWithinBounds(sx - 1, sy) && isWithinBounds(sx, sy + 1) && isWithinBounds(sx - 1, sy + 1)
+                    && (flags[sx - 1][sy] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_NORTH)) == 0
+                    && (flags[sx][sy + 1] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_WEST)) == 0
+                    && (flags[sx - 1][sy + 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0) {
+                WorldPoint neighbor = new WorldPoint(point.getX() - 1, point.getY() + 1, point.getPlane());
+                if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
+                    queue.add(neighbor);
+            }
+            if (canS && canE && isWithinBounds(sx + 1, sy) && isWithinBounds(sx, sy - 1) && isWithinBounds(sx + 1, sy - 1)
+                    && (flags[sx + 1][sy] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_SOUTH)) == 0
+                    && (flags[sx][sy - 1] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_EAST)) == 0
+                    && (flags[sx + 1][sy - 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0) {
+                WorldPoint neighbor = new WorldPoint(point.getX() + 1, point.getY() - 1, point.getPlane());
+                if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
+                    queue.add(neighbor);
+            }
+            if (canS && canW && isWithinBounds(sx - 1, sy) && isWithinBounds(sx, sy - 1) && isWithinBounds(sx - 1, sy - 1)
+                    && (flags[sx - 1][sy] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_SOUTH)) == 0
+                    && (flags[sx][sy - 1] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_WEST)) == 0
+                    && (flags[sx - 1][sy - 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0) {
+                WorldPoint neighbor = new WorldPoint(point.getX() - 1, point.getY() - 1, point.getPlane());
                 if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
                     queue.add(neighbor);
             }

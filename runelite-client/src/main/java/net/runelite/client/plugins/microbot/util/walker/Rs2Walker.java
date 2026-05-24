@@ -1512,12 +1512,20 @@ public class Rs2Walker {
 
                 boolean tileReachable = reachableTilesCache.containsKey(currentWorldPoint);
                 if (!tileReachable && !inInstance) {
-                    // Common stall case: path steps beyond a closed door are unreachable, so the
-                    // loop would otherwise "continue" without ever issuing a minimap click and
-                    // without triggering door logic (if the unreachable tile is further than the
-                    // handler range). Treat the first unreachable tile as a blocker signal:
-                    // try door handling on the edge that leads into it, then break so the outer
-                    // loop can re-evaluate.
+                    WorldPoint playerLoc = Rs2Player.getWorldLocation();
+                    if (playerLoc != null) {
+                        int unreachableDist = currentWorldPoint.distanceTo2D(playerLoc);
+                        if (unreachableDist <= HANDLER_RANGE + 2) {
+                            reachableTilesCache = Rs2Tile.getReachableTilesFromTile(playerLoc);
+                            reachableTilesCacheOrigin = playerLoc;
+                            tileReachable = reachableTilesCache.containsKey(currentWorldPoint);
+                            if (tileReachable) {
+                                log.debug("[Walker] tile {} reachable after cache refresh from {}", currentWorldPoint, playerLoc);
+                            }
+                        }
+                    }
+                }
+                if (!tileReachable && !inInstance) {
                     WorldPoint playerLoc = Rs2Player.getWorldLocation();
                     if (playerLoc != null) {
                         int unreachableDist = currentWorldPoint.distanceTo2D(playerLoc);
