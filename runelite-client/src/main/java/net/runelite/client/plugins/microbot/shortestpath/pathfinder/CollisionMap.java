@@ -59,23 +59,31 @@ public class CollisionMap {
     }
 
     public boolean n(int x, int y, int z) {
+        boolean staticResult = get(x, y, z, 0);
+        if (staticResult) return true;
         int f = liveFlag(x, y, z);
-        return f >= 0 ? (f & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0 : get(x, y, z, 0);
+        return f >= 0 && (f & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0;
     }
 
     public boolean s(int x, int y, int z) {
+        boolean staticResult = n(x, y - 1, z);
+        if (staticResult) return true;
         int f = liveFlag(x, y, z);
-        return f >= 0 ? (f & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) == 0 : n(x, y - 1, z);
+        return f >= 0 && (f & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) == 0;
     }
 
     public boolean e(int x, int y, int z) {
+        boolean staticResult = get(x, y, z, 1);
+        if (staticResult) return true;
         int f = liveFlag(x, y, z);
-        return f >= 0 ? (f & CollisionDataFlag.BLOCK_MOVEMENT_EAST) == 0 : get(x, y, z, 1);
+        return f >= 0 && (f & CollisionDataFlag.BLOCK_MOVEMENT_EAST) == 0;
     }
 
     public boolean w(int x, int y, int z) {
+        boolean staticResult = e(x - 1, y, z);
+        if (staticResult) return true;
         int f = liveFlag(x, y, z);
-        return f >= 0 ? (f & CollisionDataFlag.BLOCK_MOVEMENT_WEST) == 0 : e(x - 1, y, z);
+        return f >= 0 && (f & CollisionDataFlag.BLOCK_MOVEMENT_WEST) == 0;
     }
 
     private boolean ne(int x, int y, int z) {
@@ -95,14 +103,6 @@ public class CollisionMap {
     }
 
     public boolean isBlocked(int x, int y, int z) {
-        int f = liveFlag(x, y, z);
-        if (f >= 0) {
-            return (f & CollisionDataFlag.BLOCK_MOVEMENT_FULL) != 0
-                    || ((f & (CollisionDataFlag.BLOCK_MOVEMENT_NORTH | CollisionDataFlag.BLOCK_MOVEMENT_SOUTH
-                            | CollisionDataFlag.BLOCK_MOVEMENT_EAST | CollisionDataFlag.BLOCK_MOVEMENT_WEST))
-                            == (CollisionDataFlag.BLOCK_MOVEMENT_NORTH | CollisionDataFlag.BLOCK_MOVEMENT_SOUTH
-                            | CollisionDataFlag.BLOCK_MOVEMENT_EAST | CollisionDataFlag.BLOCK_MOVEMENT_WEST));
-        }
         return !n(x, y, z) && !s(x, y, z) && !e(x, y, z) && !w(x, y, z);
     }
 
