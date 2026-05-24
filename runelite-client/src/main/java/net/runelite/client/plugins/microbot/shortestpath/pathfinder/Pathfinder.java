@@ -363,7 +363,9 @@ public class Pathfinder implements Runnable {
         long cutoffDurationMillis = config.getCalculationCutoffMillis();
         long cutoffTimeMillis = System.currentTimeMillis() + cutoffDurationMillis;
         boolean shortDistance = minChebyshevStartToAnyTarget() < 200;
-        if (!shortDistance) {
+        if (shortDistance) {
+            wildernessLevel = 0;
+        } else {
             config.refreshTeleports(start, 31);
         }
 
@@ -372,7 +374,7 @@ public class Pathfinder implements Runnable {
         while (!cancelled && !boundary.isEmpty()) {
             Node node = boundary.poll();
 
-            if (wildernessLevel > 0) {
+            if (!shortDistance && wildernessLevel > 0) {
                 boolean update = false;
 
                 if (wildernessLevel > 30 && !config.isInLevel30Wilderness(node.packedPosition)) {
