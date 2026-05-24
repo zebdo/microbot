@@ -3256,11 +3256,14 @@ public class Rs2Walker {
         addForwardPathPoints(pathPoints, rawPath, playerLoc);
         addForwardPathPoints(pathPoints, path, playerLoc);
 
+        WorldPoint lastTransportOrigin = lastTransportHandledAtLocation;
         List<Transport> candidates = transports.stream()
                 .filter(t -> t.getDestination() != null)
                 // Local adjacent same-plane edges (doors/gates) are handled by segment door/object
                 // logic; current-tile transport probing can bounce on these and create loops.
                 .filter(t -> !isAdjacentSamePlaneTransport(t))
+                .filter(t -> lastTransportOrigin == null
+                        || !t.getDestination().equals(lastTransportOrigin))
                 .filter(t -> target == null
                         || playerLoc.getPlane() != target.getPlane()
                         || t.getDestination().getPlane() == target.getPlane())
