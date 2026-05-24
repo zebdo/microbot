@@ -8409,6 +8409,7 @@ public class Rs2Walker {
 
         int epochBefore = Rs2Bank.getBankLiveEpoch();
         boolean wasOpen = Rs2Bank.isOpen();
+        closeWorldMap();
         if (!Rs2Bank.openBank()) {
             WebWalkLog.spWarn("bank_cache_bootstrap | open_bank_failed bank={}", bankLocation);
             return WalkerState.EXIT;
@@ -8463,6 +8464,7 @@ public class Rs2Walker {
             }
             log.info("Arrived at bank location: " + bankLocation);
             // Step 2: Open bank
+            closeWorldMap();
             if (!Rs2Bank.openBank()) {
                 log.warn("Failed to open bank at: " + bankLocation);
                 return WalkerState.EXIT;
