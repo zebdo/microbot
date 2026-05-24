@@ -362,7 +362,10 @@ public class Pathfinder implements Runnable {
         long bestHeuristic = Integer.MAX_VALUE;
         long cutoffDurationMillis = config.getCalculationCutoffMillis();
         long cutoffTimeMillis = System.currentTimeMillis() + cutoffDurationMillis;
-        config.refreshTeleports(start, 31);
+        boolean shortDistance = minChebyshevStartToAnyTarget() < 200;
+        if (!shortDistance) {
+            config.refreshTeleports(start, 31);
+        }
 
         boolean reachedGoal = false;
         boolean timedOut = false;
