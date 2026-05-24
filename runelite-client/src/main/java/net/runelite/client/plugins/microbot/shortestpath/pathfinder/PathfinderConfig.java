@@ -202,7 +202,7 @@ public class PathfinderConfig {
                     snapshot[p][i] = src[i].clone();
                 }
             }
-            getMap().setLiveCollisionSnapshot(snapshot, wv.getBaseX(), wv.getBaseY());
+            CollisionMap.setLiveCollisionSnapshot(snapshot, wv.getBaseX(), wv.getBaseY());
             return true;
         });
     }

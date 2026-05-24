@@ -20,14 +20,14 @@ public class CollisionMap {
 
     private final SplitFlagMap collisionData;
 
-    private volatile int[][][] liveFlags;
-    private volatile int liveBaseX, liveBaseY;
+    private static volatile int[][][] liveFlags;
+    private static volatile int liveBaseX, liveBaseY;
     private static final int SCENE_SIZE = 104;
 
-    public void setLiveCollisionSnapshot(int[][][] flags, int baseX, int baseY) {
-        this.liveFlags = flags;
-        this.liveBaseX = baseX;
-        this.liveBaseY = baseY;
+    public static void setLiveCollisionSnapshot(int[][][] flags, int baseX, int baseY) {
+        liveFlags = flags;
+        liveBaseX = baseX;
+        liveBaseY = baseY;
     }
 
     public byte[] getPlanes() {
