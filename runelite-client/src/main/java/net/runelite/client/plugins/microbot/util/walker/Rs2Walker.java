@@ -8329,6 +8329,11 @@ public class Rs2Walker {
                 return bootstrapState;
             }
         }
+        int chebyshevToTarget = pl.distanceTo(target);
+        if (!forceBanking && chebyshevToTarget <= 200) {
+            WebWalkLog.bankWalkDebug("skip_compare_short_distance dist={} goal={}", chebyshevToTarget, target);
+            return walkWithStateInternal(target, distance);
+        }
         // Check what transport items are needed
         long compareStartedAt = System.currentTimeMillis();
         long compareFromWalkStart = walkSessionStartedAtMs > 0 ? compareStartedAt - walkSessionStartedAtMs : 0L;
