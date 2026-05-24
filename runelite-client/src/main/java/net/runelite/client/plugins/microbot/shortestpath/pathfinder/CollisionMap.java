@@ -20,14 +20,19 @@ public class CollisionMap {
 
     private final SplitFlagMap collisionData;
 
-    private static volatile int[][][] liveFlags;
-    private static volatile int liveBaseX, liveBaseY;
     private static final int SCENE_SIZE = 104;
+    private static volatile LiveSnapshot liveSnapshot;
+
+    private static final class LiveSnapshot {
+        final int[][][] flags;
+        final int baseX, baseY;
+        LiveSnapshot(int[][][] flags, int baseX, int baseY) {
+            this.flags = flags; this.baseX = baseX; this.baseY = baseY;
+        }
+    }
 
     public static void setLiveCollisionSnapshot(int[][][] flags, int baseX, int baseY) {
-        liveFlags = flags;
-        liveBaseX = baseX;
-        liveBaseY = baseY;
+        liveSnapshot = new LiveSnapshot(flags, baseX, baseY);
     }
 
     public byte[] getPlanes() {
@@ -42,48 +47,35 @@ public class CollisionMap {
         return collisionData.get(x, y, z, flag);
     }
 
-    public boolean n(int x, int y, int z) {
-        int[][][] live = liveFlags;
-        if (live != null && z >= 0 && z < live.length && live[z] != null) {
-            int sx = x - liveBaseX, sy = y - liveBaseY;
+    private int liveFlag(int x, int y, int z) {
+        LiveSnapshot snap = liveSnapshot;
+        if (snap != null && z >= 0 && z < snap.flags.length && snap.flags[z] != null) {
+            int sx = x - snap.baseX, sy = y - snap.baseY;
             if (sx >= 0 && sx < SCENE_SIZE && sy >= 0 && sy < SCENE_SIZE) {
-                return (live[z][sx][sy] & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0;
+                return snap.flags[z][sx][sy];
             }
         }
-        return get(x, y, z, 0);
+        return -1;
+    }
+
+    public boolean n(int x, int y, int z) {
+        int f = liveFlag(x, y, z);
+        return f >= 0 ? (f & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0 : get(x, y, z, 0);
     }
 
     public boolean s(int x, int y, int z) {
-        int[][][] live = liveFlags;
-        if (live != null && z >= 0 && z < live.length && live[z] != null) {
-            int sx = x - liveBaseX, sy = y - liveBaseY;
-            if (sx >= 0 && sx < SCENE_SIZE && sy >= 0 && sy < SCENE_SIZE) {
-                return (live[z][sx][sy] & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) == 0;
-            }
-        }
-        return n(x, y - 1, z);
+        int f = liveFlag(x, y, z);
+        return f >= 0 ? (f & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) == 0 : n(x, y - 1, z);
     }
 
     public boolean e(int x, int y, int z) {
-        int[][][] live = liveFlags;
-        if (live != null && z >= 0 && z < live.length && live[z] != null) {
-            int sx = x - liveBaseX, sy = y - liveBaseY;
-            if (sx >= 0 && sx < SCENE_SIZE && sy >= 0 && sy < SCENE_SIZE) {
-                return (live[z][sx][sy] & CollisionDataFlag.BLOCK_MOVEMENT_EAST) == 0;
-            }
-        }
-        return get(x, y, z, 1);
+        int f = liveFlag(x, y, z);
+        return f >= 0 ? (f & CollisionDataFlag.BLOCK_MOVEMENT_EAST) == 0 : get(x, y, z, 1);
     }
 
     public boolean w(int x, int y, int z) {
-        int[][][] live = liveFlags;
-        if (live != null && z >= 0 && z < live.length && live[z] != null) {
-            int sx = x - liveBaseX, sy = y - liveBaseY;
-            if (sx >= 0 && sx < SCENE_SIZE && sy >= 0 && sy < SCENE_SIZE) {
-                return (live[z][sx][sy] & CollisionDataFlag.BLOCK_MOVEMENT_WEST) == 0;
-            }
-        }
-        return e(x - 1, y, z);
+        int f = liveFlag(x, y, z);
+        return f >= 0 ? (f & CollisionDataFlag.BLOCK_MOVEMENT_WEST) == 0 : e(x - 1, y, z);
     }
 
     private boolean ne(int x, int y, int z) {
@@ -103,6 +95,14 @@ public class CollisionMap {
     }
 
     public boolean isBlocked(int x, int y, int z) {
+        int f = liveFlag(x, y, z);
+        if (f >= 0) {
+            return (f & CollisionDataFlag.BLOCK_MOVEMENT_FULL) != 0
+                    || ((f & (CollisionDataFlag.BLOCK_MOVEMENT_NORTH | CollisionDataFlag.BLOCK_MOVEMENT_SOUTH
+                            | CollisionDataFlag.BLOCK_MOVEMENT_EAST | CollisionDataFlag.BLOCK_MOVEMENT_WEST))
+                            == (CollisionDataFlag.BLOCK_MOVEMENT_NORTH | CollisionDataFlag.BLOCK_MOVEMENT_SOUTH
+                            | CollisionDataFlag.BLOCK_MOVEMENT_EAST | CollisionDataFlag.BLOCK_MOVEMENT_WEST));
+        }
         return !n(x, y, z) && !s(x, y, z) && !e(x, y, z) && !w(x, y, z);
     }
 
