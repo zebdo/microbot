@@ -225,7 +225,11 @@ public class Pathfinder implements Runnable {
     private static final EnumSet<TransportType> NETWORK_TRANSPORT_TYPES = EnumSet.of(
             TransportType.FAIRY_RING, TransportType.SPIRIT_TREE, TransportType.GNOME_GLIDER);
 
+    private static final int MIN_CHAIN_INJECT_DISTANCE = 500;
+
     private void injectTransportChainNodes(Node startNode) {
+        if (minChebyshevStartToAnyTarget() < MIN_CHAIN_INJECT_DISTANCE) return;
+
         Set<Transport> playerTransports = config.getTransportsPacked().getOrDefault(start, Collections.emptySet());
         if (playerTransports.isEmpty()) return;
 
