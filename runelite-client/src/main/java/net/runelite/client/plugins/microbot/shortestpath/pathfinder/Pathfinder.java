@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.shortestpath.Transport;
-import net.runelite.client.plugins.microbot.shortestpath.TransportType;
 import net.runelite.client.plugins.microbot.shortestpath.WorldPointUtil;
 import net.runelite.client.plugins.microbot.util.walker.WebWalkLog;
 
@@ -221,80 +220,6 @@ public class Pathfinder implements Runnable {
         }
     }
 
-    private static final int MAX_CHAIN_WALK_DISTANCE = 250;
-    private static final EnumSet<TransportType> NETWORK_TRANSPORT_TYPES = EnumSet.of(
-            TransportType.FAIRY_RING, TransportType.SPIRIT_TREE, TransportType.GNOME_GLIDER);
-
-    private static final int MIN_CHAIN_INJECT_DISTANCE = 500;
-
-    private void injectTransportChainNodes(Node startNode) {
-        if (minChebyshevStartToAnyTarget() < MIN_CHAIN_INJECT_DISTANCE) return;
-
-        Set<Transport> playerTransports = config.getTransportsPacked().getOrDefault(start, Collections.emptySet());
-        if (playerTransports.isEmpty()) return;
-
-        List<int[]> teleportDests = new ArrayList<>();
-        for (Transport teleport : playerTransports) {
-            if (!TransportType.isTeleport(teleport.getType(), teleport.getOrigin())) continue;
-            WorldPoint dest = teleport.getDestination();
-            if (dest == null) continue;
-            int cost = config.getDistanceBeforeUsingTeleport() + teleport.getDuration();
-            teleportDests.add(new int[]{WorldPointUtil.packWorldPoint(dest), cost});
-        }
-        if (teleportDests.isEmpty()) return;
-
-        int injected = 0;
-        for (Map.Entry<WorldPoint, Set<Transport>> entry : config.getTransports().entrySet()) {
-            WorldPoint networkOrigin = entry.getKey();
-            if (networkOrigin == null) continue;
-            int noPacked = WorldPointUtil.packWorldPoint(networkOrigin);
-            int noX = WorldPointUtil.unpackWorldX(noPacked);
-            int noY = WorldPointUtil.unpackWorldY(noPacked);
-            int noZ = WorldPointUtil.unpackWorldPlane(noPacked);
-
-            List<Transport> networkTransports = new ArrayList<>();
-            for (Transport t : entry.getValue()) {
-                if (NETWORK_TRANSPORT_TYPES.contains(t.getType()) && t.getDestination() != null) {
-                    networkTransports.add(t);
-                }
-            }
-            if (networkTransports.isEmpty()) continue;
-
-            for (int[] td : teleportDests) {
-                int tdPacked = td[0];
-                int teleportCost = td[1];
-                int tdZ = WorldPointUtil.unpackWorldPlane(tdPacked);
-                if (tdZ != noZ) continue;
-                int tdX = WorldPointUtil.unpackWorldX(tdPacked);
-                int tdY = WorldPointUtil.unpackWorldY(tdPacked);
-                int walkDist = Math.max(Math.abs(tdX - noX), Math.abs(tdY - noY));
-                if (walkDist == 0 || walkDist > MAX_CHAIN_WALK_DISTANCE) continue;
-
-                WorldPoint tdWp = WorldPointUtil.unpackWorldPoint(tdPacked);
-                TransportNode teleportNode = new TransportNode(tdWp, startNode, teleportCost);
-                Node walkNode = new Node(noPacked, teleportNode, teleportCost + walkDist);
-
-                for (Transport nt : networkTransports) {
-                    int destPacked = WorldPointUtil.packWorldPoint(nt.getDestination());
-                    if (visited.get(destPacked)) continue;
-                    int chainCost = teleportCost + walkDist + nt.getDuration();
-                    int h = heuristicToNearestTarget(destPacked);
-                    if (chainCost + h >= teleportCost + heuristicToNearestTarget(tdPacked)) continue;
-
-                    TransportNode destNode = new TransportNode(nt.getDestination(), walkNode, nt.getDuration());
-                    destNode.heuristic = h;
-                    visited.set(destPacked);
-                    boundary.add(destNode);
-                    injected++;
-                }
-                break;
-            }
-        }
-        if (injected > 0) {
-            log.debug("[Pathfinder] injected {} transport chain bridge nodes", injected);
-        }
-    }
-
     // Admissible A* heuristic: Chebyshev 2D to the nearest target, with a modulo-6400
     // fallback for the surface↔underground Y-offset convention (OSRS shifts underground
     // coords by +6400 on the Y axis, so Varrock sewers live at y≈9800 while Varrock sits
@@ -438,7 +363,7 @@ public class Pathfinder implements Runnable {
         long cutoffDurationMillis = config.getCalculationCutoffMillis();
         long cutoffTimeMillis = System.currentTimeMillis() + cutoffDurationMillis;
         config.refreshTeleports(start, 31);
-        injectTransportChainNodes(startNode);
+
         boolean reachedGoal = false;
         boolean timedOut = false;
         while (!cancelled && !boundary.isEmpty()) {
@@ -547,7 +472,7 @@ public class Pathfinder implements Runnable {
         long cutoffDurationMillis = config.getCalculationCutoffMillis();
         long cutoffTimeMillis = System.currentTimeMillis() + cutoffDurationMillis;
         config.refreshTeleports(start, 31);
-        injectTransportChainNodes(startNode);
+
 
         while (!cancelled && (!boundary.isEmpty() || !boundaryBackward.isEmpty())) {
             if (!boundary.isEmpty()) {
