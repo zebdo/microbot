@@ -436,12 +436,6 @@ public class PathfinderConfig {
         Rs2LeaguesTransport.injectLeaguesTransports(this, leaguesCtx, usableTeleports, transports, transportsPacked, typeStats);
         long filterTime = System.currentTimeMillis() - filterStart;
 
-        long similarStart = System.currentTimeMillis();
-        if (useBankItems && config.maxSimilarTransportDistance() > 0) {
-            filterSimilarTransports(target);
-        }
-        long similarTime = System.currentTimeMillis() - similarStart;
-
         int[] sortedVarbits = varbitIds.stream().mapToInt(Integer::intValue).sorted().toArray();
         int[] sortedVarplayers = varplayerIds.stream().mapToInt(Integer::intValue).sorted().toArray();
         int[] sortedQuestIds = mergedList.values().stream()
@@ -458,6 +452,12 @@ public class PathfinderConfig {
         int verificationHash = computeTransportRefreshVerificationHash(refreshBoostedLevels, sortedVarbits, sortedVarplayers, sortedQuestIds);
         transportRefreshSnapshot = TransportRefreshSnapshot.capture(
                 refreshCacheKeyHash, verificationHash, sortedVarbits, sortedVarplayers, sortedQuestIds, transports, usableTeleports);
+
+        long similarStart = System.currentTimeMillis();
+        if (useBankItems && config.maxSimilarTransportDistance() > 0) {
+            filterSimilarTransports(target);
+        }
+        long similarTime = System.currentTimeMillis() - similarStart;
 
         refreshAvailableItemIds = null;
         refreshBoostedLevels = null;
@@ -1419,7 +1419,6 @@ public class PathfinderConfig {
 
     private int computeTransportRefreshCacheKeyHash(WorldPoint target, Rs2LeaguesTransport.LeaguesContext leaguesCtx) {
         assert leaguesCtx != null;
-        int targetPacked = target == null ? 0 : WorldPointUtil.packWorldPoint(target);
         int invFp = fingerprintInventoryEquipmentBank();
         int members = (client != null && client.getWorldType().contains(WorldType.MEMBERS)) ? 1 : 0;
         int preferTp = (config != null && config.preferTransportToTarget()) ? 1 : 0;
@@ -1430,7 +1429,6 @@ public class PathfinderConfig {
                 ignoreTeleportAndItems,
                 useBankItems,
                 useNpcs,
-                targetPacked,
                 invFp,
                 members,
                 Rs2Walker.disableTeleports,
