@@ -1,7 +1,6 @@
 package net.runelite.client.plugins.microbot.shortestpath.pathfinder;
 
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.CollisionDataFlag;
 import net.runelite.api.TileObject;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.shortestpath.Transport;
@@ -20,21 +19,6 @@ public class CollisionMap {
 
     private final SplitFlagMap collisionData;
 
-    private static final int SCENE_SIZE = 104;
-    private static volatile LiveSnapshot liveSnapshot;
-
-    private static final class LiveSnapshot {
-        final int[][][] flags;
-        final int baseX, baseY;
-        LiveSnapshot(int[][][] flags, int baseX, int baseY) {
-            this.flags = flags; this.baseX = baseX; this.baseY = baseY;
-        }
-    }
-
-    public static void setLiveCollisionSnapshot(int[][][] flags, int baseX, int baseY) {
-        liveSnapshot = new LiveSnapshot(flags, baseX, baseY);
-    }
-
     public byte[] getPlanes() {
         return collisionData.getRegionMapPlaneCounts();
     }
@@ -47,43 +31,20 @@ public class CollisionMap {
         return collisionData.get(x, y, z, flag);
     }
 
-    private int liveFlag(int x, int y, int z) {
-        LiveSnapshot snap = liveSnapshot;
-        if (snap != null && z >= 0 && z < snap.flags.length && snap.flags[z] != null) {
-            int sx = x - snap.baseX, sy = y - snap.baseY;
-            if (sx >= 0 && sx < SCENE_SIZE && sy >= 0 && sy < SCENE_SIZE) {
-                return snap.flags[z][sx][sy];
-            }
-        }
-        return -1;
-    }
-
     public boolean n(int x, int y, int z) {
-        boolean staticResult = get(x, y, z, 0);
-        if (staticResult) return true;
-        int f = liveFlag(x, y, z);
-        return f >= 0 && (f & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0;
+        return get(x, y, z, 0);
     }
 
     public boolean s(int x, int y, int z) {
-        boolean staticResult = n(x, y - 1, z);
-        if (staticResult) return true;
-        int f = liveFlag(x, y, z);
-        return f >= 0 && (f & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) == 0;
+        return n(x, y - 1, z);
     }
 
     public boolean e(int x, int y, int z) {
-        boolean staticResult = get(x, y, z, 1);
-        if (staticResult) return true;
-        int f = liveFlag(x, y, z);
-        return f >= 0 && (f & CollisionDataFlag.BLOCK_MOVEMENT_EAST) == 0;
+        return get(x, y, z, 1);
     }
 
     public boolean w(int x, int y, int z) {
-        boolean staticResult = e(x - 1, y, z);
-        if (staticResult) return true;
-        int f = liveFlag(x, y, z);
-        return f >= 0 && (f & CollisionDataFlag.BLOCK_MOVEMENT_WEST) == 0;
+        return e(x - 1, y, z);
     }
 
     private boolean ne(int x, int y, int z) {

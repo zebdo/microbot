@@ -188,25 +188,6 @@ public class PathfinderConfig {
         return map.get();
     }
 
-    private void captureLiveCollisionSnapshot() {
-        Microbot.getClientThread().runOnClientThreadOptional(() -> {
-            WorldView wv = client.getTopLevelWorldView();
-            if (wv == null) return true;
-            CollisionData[] cd = wv.getCollisionMaps();
-            if (cd == null) return true;
-            int[][][] snapshot = new int[cd.length][][];
-            for (int p = 0; p < cd.length; p++) {
-                int[][] src = cd[p].getFlags();
-                snapshot[p] = new int[src.length][];
-                for (int i = 0; i < src.length; i++) {
-                    snapshot[p][i] = src[i].clone();
-                }
-            }
-            CollisionMap.setLiveCollisionSnapshot(snapshot, wv.getBaseX(), wv.getBaseY());
-            return true;
-        });
-    }
-
     public void refresh(WorldPoint target) {
         calculationCutoffMillis = (long) config.calculationCutoff() * Constants.GAME_TICK_LENGTH;
         avoidWilderness = ShortestPathPlugin.override("avoidWilderness", config.avoidWilderness());
@@ -247,7 +228,6 @@ public class PathfinderConfig {
         //END microbot variables
 
         if (GameState.LOGGED_IN.equals(client.getGameState())) {
-            captureLiveCollisionSnapshot();
             long t0 = System.currentTimeMillis();
             refreshTransports(target);
             long t1 = System.currentTimeMillis();
@@ -287,10 +267,11 @@ public class PathfinderConfig {
             Set<Transport> existingTeleports = transports.get(key);
             if (existingTeleports != null) {
                 existingTeleports.addAll(usableWildyTeleports);
+                transportsPacked.put(packedLocation, existingTeleports);
             } else {
                 transports.put(key, usableWildyTeleports);
+                transportsPacked.put(packedLocation, usableWildyTeleports);
             }
-            transportsPacked.put(packedLocation, usableWildyTeleports);
         }
 
     }
