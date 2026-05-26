@@ -231,6 +231,10 @@ public enum DepositBoxLocation {
                 if (!isMember()) return false;
                 // Requires Cabin Fever
                 return Rs2Player.getQuestState(Quest.CABIN_FEVER) == QuestState.FINISHED;
+            case SACRED_GROVE:
+                if (!isMember()) return false;
+                // Requires The Red Reef
+                return Rs2Player.getQuestState(Quest.THE_RED_REEF) == QuestState.FINISHED;
             case ARDOUGNE:
             case CATHERBY:
             case ETCETERIA:
