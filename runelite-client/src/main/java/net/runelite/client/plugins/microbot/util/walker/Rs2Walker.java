@@ -1093,6 +1093,11 @@ public class Rs2Walker {
                     return WalkerState.EXIT;
                 }
                 if (pathfinder == null) {
+                    if (currentTarget != null && currentTarget.equals(target)) {
+                        walkerDiag("pathfinder null but target still set; recalculating");
+                        recalculatePath();
+                        continue;
+                    }
                     traceProcessWalkExit("pathfinder-still-null", target, processWalkTail);
                     setTarget(null, "rs2walker:processWalk:pathfinder-still-null");
                     return WalkerState.EXIT;
@@ -1368,11 +1373,15 @@ public class Rs2Walker {
             }
 
             WorldPoint currentPlayerLoc = Rs2Player.getWorldLocation();
-            reachableTilesCache = Rs2Tile.getReachableTilesFromTile(currentPlayerLoc);
+            reachableTilesCache = Rs2Tile.getReachableTilesFromTile(currentPlayerLoc, HANDLER_RANGE * 3);
             reachableTilesCacheOrigin = currentPlayerLoc;
+            final int currentPlayerPlane = currentPlayerLoc != null ? currentPlayerLoc.getPlane() : -1;
 
             for (int i = indexOfStartPoint; !doorOrTransportResult && i < path.size(); i++) {
                 WorldPoint currentWorldPoint = path.get(i);
+                if (currentWorldPoint.getPlane() != currentPlayerPlane) {
+                    continue;
+                }
                 if (walkCancelledDiag(target, "processWalk:path-loop", processWalkTail)) {
                     return WalkerState.EXIT;
                 }
@@ -1516,7 +1525,7 @@ public class Rs2Walker {
                     if (playerLoc != null) {
                         int unreachableDist = currentWorldPoint.distanceTo2D(playerLoc);
                         if (unreachableDist <= HANDLER_RANGE + 2) {
-                            reachableTilesCache = Rs2Tile.getReachableTilesFromTile(playerLoc);
+                            reachableTilesCache = Rs2Tile.getReachableTilesFromTile(playerLoc, HANDLER_RANGE + 5);
                             reachableTilesCacheOrigin = playerLoc;
                             tileReachable = reachableTilesCache.containsKey(currentWorldPoint);
                             if (tileReachable) {
@@ -1664,7 +1673,7 @@ public class Rs2Walker {
                     }
                     continue;
                 }
-                nextWalkingDistance = Rs2Random.between(9, 12);
+                nextWalkingDistance = path.size() <= 5 ? 0 : Rs2Random.between(9, 12);
                 int dist2d = currentWorldPoint.distanceTo2D(Rs2Player.getWorldLocation());
                 if (dist2d > nextWalkingDistance) {
                     tmarkPostTransport("post_transport_click_eligibility", target,
@@ -8333,7 +8342,7 @@ public class Rs2Walker {
             }
         }
         int chebyshevToTarget = pl.distanceTo(target);
-        if (!forceBanking && chebyshevToTarget <= 200) {
+        if (!forceBanking && chebyshevToTarget <= 100) {
             WebWalkLog.bankWalkDebug("skip_compare_short_distance dist={} goal={}", chebyshevToTarget, target);
             return walkWithStateInternal(target, distance);
         }

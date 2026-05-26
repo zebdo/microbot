@@ -538,10 +538,48 @@ public abstract class Rs2Tile implements Tile {
             int y = point & 0xFFFF;
 
             if (isWithinBounds(x, y)) {
+                boolean canN = (flags[x][y] & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0;
+                boolean canS = (flags[x][y] & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) == 0;
+                boolean canE = (flags[x][y] & CollisionDataFlag.BLOCK_MOVEMENT_EAST) == 0;
+                boolean canW = (flags[x][y] & CollisionDataFlag.BLOCK_MOVEMENT_WEST) == 0;
+
                 checkAndAddNeighbour(queue, visited, flags, x, y, -1, 0, CollisionDataFlag.BLOCK_MOVEMENT_WEST);
                 checkAndAddNeighbour(queue, visited, flags, x, y, 1, 0, CollisionDataFlag.BLOCK_MOVEMENT_EAST);
                 checkAndAddNeighbour(queue, visited, flags, x, y, 0, -1, CollisionDataFlag.BLOCK_MOVEMENT_SOUTH);
                 checkAndAddNeighbour(queue, visited, flags, x, y, 0, 1, CollisionDataFlag.BLOCK_MOVEMENT_NORTH);
+
+                if (canN && canE && isWithinBounds(x + 1, y + 1)
+                        && !visited[x + 1][y + 1]
+                        && (flags[x + 1][y] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_NORTH)) == 0
+                        && (flags[x][y + 1] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_EAST)) == 0
+                        && (flags[x + 1][y + 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0) {
+                    queue.add(((x + 1) << 16) | (y + 1));
+                    visited[x + 1][y + 1] = true;
+                }
+                if (canN && canW && isWithinBounds(x - 1, y + 1)
+                        && !visited[x - 1][y + 1]
+                        && (flags[x - 1][y] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_NORTH)) == 0
+                        && (flags[x][y + 1] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_WEST)) == 0
+                        && (flags[x - 1][y + 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0) {
+                    queue.add(((x - 1) << 16) | (y + 1));
+                    visited[x - 1][y + 1] = true;
+                }
+                if (canS && canE && isWithinBounds(x + 1, y - 1)
+                        && !visited[x + 1][y - 1]
+                        && (flags[x + 1][y] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_SOUTH)) == 0
+                        && (flags[x][y - 1] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_EAST)) == 0
+                        && (flags[x + 1][y - 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0) {
+                    queue.add(((x + 1) << 16) | (y - 1));
+                    visited[x + 1][y - 1] = true;
+                }
+                if (canS && canW && isWithinBounds(x - 1, y - 1)
+                        && !visited[x - 1][y - 1]
+                        && (flags[x - 1][y] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_SOUTH)) == 0
+                        && (flags[x][y - 1] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_WEST)) == 0
+                        && (flags[x - 1][y - 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0) {
+                    queue.add(((x - 1) << 16) | (y - 1));
+                    visited[x - 1][y - 1] = true;
+                }
             }
         }
 
