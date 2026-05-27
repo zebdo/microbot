@@ -5810,6 +5810,10 @@ public class Rs2Walker {
                     }
 
                     if (transport.getType() == TransportType.SPIRIT_TREE) {
+                        if (!ShortestPathPlugin.getPathfinderConfig().isUseSpiritTrees()) {
+                            log.debug("[Walker] skip spirit tree transport — setting is off");
+                            continue;
+                        }
                         if (attemptObserved(transport, () -> handleSpiritTree(transport))) {
                             sleepUntil(() -> !Rs2Player.isAnimating());
                             boolean spiritLanded = Rs2WalkerRuntimeAwaits.awaitCondition(

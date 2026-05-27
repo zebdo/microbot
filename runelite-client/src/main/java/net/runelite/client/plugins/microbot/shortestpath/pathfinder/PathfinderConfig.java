@@ -101,6 +101,8 @@ public class PathfinderConfig {
     private volatile long calculationCutoffMillis;
     @Getter
     private volatile boolean avoidWilderness;
+    @Getter
+    private volatile boolean useSpiritTrees;
     private volatile boolean useAgilityShortcuts,
             useGrappleShortcuts,
             useBoats,
@@ -112,7 +114,6 @@ public class PathfinderConfig {
             useMinecarts,
             usePoh,
             useQuetzals,
-            useSpiritTrees,
             useTeleportationLevers,
             useTeleportationMinigames,
             useTeleportationPortals,
@@ -197,20 +198,13 @@ public class PathfinderConfig {
         useCanoes = ShortestPathPlugin.override("useCanoes", config.useCanoes());
         useCharterShips = ShortestPathPlugin.override("useCharterShips", config.useCharterShips());
         useShips = ShortestPathPlugin.override("useShips", config.useShips());
-        useFairyRings = ShortestPathPlugin.override("useFairyRings", config.useFairyRings());
-        useGnomeGliders = ShortestPathPlugin.override("useGnomeGliders", config.useGnomeGliders());
         useMinecarts = ShortestPathPlugin.override("useMinecarts", config.useMinecarts());
         usePoh = ShortestPathPlugin.override("usePoh", config.usePoh());
-        useQuetzals = ShortestPathPlugin.override("useQuetzals", config.useQuetzals());
-        useSpiritTrees = ShortestPathPlugin.override("useSpiritTrees", config.useSpiritTrees());
         useSpiritTreeEtceteria = ShortestPathPlugin.override("spiritTreeEtceteria", config.spiritTreeEtceteria());
         useSpiritTreeBrimhaven = ShortestPathPlugin.override("spiritTreeBrimhaven", config.spiritTreeBrimhaven());
         useSpiritTreePortSarim = ShortestPathPlugin.override("spiritTreePortSarim", config.spiritTreePortSarim());
         useSpiritTreeHosidius = ShortestPathPlugin.override("spiritTreeHosidius", config.spiritTreeHosidius());
         useSpiritTreeFarmingGuild = ShortestPathPlugin.override("spiritTreeFarmingGuild", config.spiritTreeFarmingGuild());
-
-        // Keep the master spirit-tree toggle authoritative. Destination toggles only
-        // gate explicit optional destinations listed in SPIRIT_TREE_DESTINATIONS_ORDERED.
         useTeleportationItems = ShortestPathPlugin.override("useTeleportationItems", config.useTeleportationItems());
         useTeleportationMinigames = ShortestPathPlugin.override("useTeleportationMinigames", config.useTeleportationMinigames());
         useTeleportationLevers = ShortestPathPlugin.override("useTeleportationLevers", config.useTeleportationLevers());
@@ -811,8 +805,8 @@ public class PathfinderConfig {
             log.debug("Transport ( O: {} D: {} ) requires members world", transport.getOrigin(), transport.getDestination());
             return false;
         }
-        if (transport.getType() == TransportType.SPIRIT_TREE && !isSpiritTreeDestinationEnabled(transport)) {
-            log.debug("Transport ( O: {} D: {} ) is a spirit tree route but the destination is disabled", transport.getOrigin(), transport.getDestination());
+        if (transport.getType() == TransportType.SPIRIT_TREE && !isSpiritTreeRouteEnabled(transport)) {
+            log.debug("Transport ( O: {} D: {} ) is a spirit tree route but the tree is disabled", transport.getOrigin(), transport.getDestination());
             return false;
         }
         // If you don't meet level requirements
@@ -964,14 +958,16 @@ public class PathfinderConfig {
         }
     }
 
-    private boolean isSpiritTreeDestinationEnabled(Transport transport) {
+    private boolean isSpiritTreeRouteEnabled(Transport transport) {
+        WorldPoint origin = transport.getOrigin();
         WorldPoint destination = transport.getDestination();
-        if (destination == null) {
-            return true;
-        }
         for (int i = 0; i < SPIRIT_TREE_DESTINATIONS_ORDERED.length; i++) {
-            if (destination.equals(SPIRIT_TREE_DESTINATIONS_ORDERED[i])) {
-                return spiritTreeDestinationToggle(i);
+            if (!spiritTreeDestinationToggle(i)) {
+                WorldPoint toggledPoint = SPIRIT_TREE_DESTINATIONS_ORDERED[i];
+                if ((destination != null && destination.equals(toggledPoint))
+                        || (origin != null && origin.distanceTo2D(toggledPoint) <= 5)) {
+                    return false;
+                }
             }
         }
         return true;
