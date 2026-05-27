@@ -170,6 +170,7 @@ public class Rs2Walker {
     private static volatile boolean firstMovementClickMarked = false;
     private static volatile long lastTransportHandledAtMs = 0L;
     private static volatile WorldPoint lastTransportHandledAtLocation = null;
+    private static volatile WorldPoint lastTransportOriginLocation = null;
     private static final java.util.Deque<WorldPoint> expectedTransportDestinations = new ArrayDeque<>();
     private static final Set<String> startupPhasesLogged = ConcurrentHashMap.newKeySet();
 
@@ -238,6 +239,7 @@ public class Rs2Walker {
         firstMovementClickMarked = false;
         startupPhasesLogged.clear();
         lastTransportHandledAtLocation = null;
+        lastTransportOriginLocation = null;
         synchronized (expectedTransportDestinations) {
             expectedTransportDestinations.clear();
         }
@@ -3265,14 +3267,14 @@ public class Rs2Walker {
         addForwardPathPoints(pathPoints, rawPath, playerLoc);
         addForwardPathPoints(pathPoints, path, playerLoc);
 
-        WorldPoint lastTransportOrigin = lastTransportHandledAtLocation;
+        WorldPoint priorOrigin = lastTransportOriginLocation;
         List<Transport> candidates = transports.stream()
                 .filter(t -> t.getDestination() != null)
                 // Local adjacent same-plane edges (doors/gates) are handled by segment door/object
                 // logic; current-tile transport probing can bounce on these and create loops.
                 .filter(t -> !isAdjacentSamePlaneTransport(t))
-                .filter(t -> lastTransportOrigin == null
-                        || !t.getDestination().equals(lastTransportOrigin))
+                .filter(t -> priorOrigin == null
+                        || !t.getDestination().equals(priorOrigin))
                 .filter(t -> target == null
                         || playerLoc.getPlane() != target.getPlane()
                         || t.getDestination().getPlane() == target.getPlane())
@@ -6271,6 +6273,7 @@ public class Rs2Walker {
         long handoffStartedAt = System.currentTimeMillis();
         lastTransportHandledAtMs = handoffStartedAt;
         lastTransportHandledAtLocation = Rs2Player.getWorldLocation();
+        lastTransportOriginLocation = transport != null ? transport.getOrigin() : null;
         WorldPoint goal = currentTarget;
         WorldPoint transportDest = transport != null ? transport.getDestination() : null;
         boolean expectedTransport = consumeExpectedTransportDestination(transportDest);
