@@ -165,6 +165,7 @@ public class MicrobotPlugin extends Plugin
 		Microbot.pauseAllScripts.set(false);
 		Microbot.enableAutoRunOn = microbotConfig.enableAutoRunOn();
 		Microbot.useStaminaPotsIfNeeded = microbotConfig.useStaminaPotsIfNeeded();
+		Microbot.enableAutoLogin = microbotConfig.enableAutoLogin();
 		Microbot.getBlockingEventManager().start();
 
 		MicrobotPluginListPanel pluginListPanel = pluginListPanelProvider.get();
@@ -481,6 +482,9 @@ public class MicrobotPlugin extends Plugin
 					break;
 				case MicrobotConfig.keyUseStaminaPotsIfNeeded:
 					Microbot.useStaminaPotsIfNeeded = microbotConfig.useStaminaPotsIfNeeded();
+					break;
+				case MicrobotConfig.keyEnableAutoLogin:
+					Microbot.enableAutoLogin = microbotConfig.enableAutoLogin();
 					break;
 				case MicrobotConfig.keyEnableGameChatLogging:
 				case MicrobotConfig.keyGameChatLogPattern:

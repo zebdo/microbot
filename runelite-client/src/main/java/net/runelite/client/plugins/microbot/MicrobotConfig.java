@@ -85,6 +85,19 @@ public interface MicrobotConfig extends Config
 		return true;
 	}
 
+	String keyEnableAutoLogin = "enableAutoLogin";
+	@ConfigItem(
+		keyName = keyEnableAutoLogin,
+		name = "Enable auto login",
+		description = "Automatically click the Play button on the welcome screen after logging in",
+		position = 5,
+		section = generalSection
+	)
+	default boolean enableAutoLogin()
+	{
+		return true;
+	}
+
 	@ConfigSection(
 		name = "Logging",
 		description = "Game chat logging configuration",
