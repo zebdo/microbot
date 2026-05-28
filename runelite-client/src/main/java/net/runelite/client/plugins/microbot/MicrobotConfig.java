@@ -59,6 +59,32 @@ public interface MicrobotConfig extends Config
 		return true;
 	}
 
+	String keyEnableAutoRunOn = "enableAutoRunOn";
+	@ConfigItem(
+		keyName = keyEnableAutoRunOn,
+		name = "Enable auto run",
+		description = "Automatically toggle run on when you have run energy",
+		position = 3,
+		section = generalSection
+	)
+	default boolean enableAutoRunOn()
+	{
+		return true;
+	}
+
+	String keyUseStaminaPotsIfNeeded = "useStaminaPotsIfNeeded";
+	@ConfigItem(
+		keyName = keyUseStaminaPotsIfNeeded,
+		name = "Use stamina potions",
+		description = "Automatically use stamina potions from inventory when run energy is low and the player is moving",
+		position = 4,
+		section = generalSection
+	)
+	default boolean useStaminaPotsIfNeeded()
+	{
+		return true;
+	}
+
 	@ConfigSection(
 		name = "Logging",
 		description = "Game chat logging configuration",
