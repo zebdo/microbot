@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.shortestpath.Transport;
+import net.runelite.client.plugins.microbot.shortestpath.TransportType;
 import net.runelite.client.plugins.microbot.shortestpath.WorldPointUtil;
 import net.runelite.client.plugins.microbot.util.walker.WebWalkLog;
 
@@ -233,6 +234,11 @@ public class Pathfinder implements Runnable {
     private static final int UNDERGROUND_Y_OFFSET = 6400;
 
     private int heuristicToNearestTarget(int packedPos) {
+        return applyLandmarks(packedPos, baseHeuristicToNearestTarget(packedPos),
+                fwdLandmark, fwdLandmarkResidual);
+    }
+
+    private int baseHeuristicToNearestTarget(int packedPos) {
         int posX = WorldPointUtil.unpackWorldX(packedPos);
         int posY = WorldPointUtil.unpackWorldY(packedPos);
         int best = Integer.MAX_VALUE;
@@ -251,6 +257,11 @@ public class Pathfinder implements Runnable {
     }
 
     private int heuristicFromStart(int packedPos) {
+        return applyLandmarks(packedPos, baseHeuristicFromStart(packedPos),
+                backLandmark, backLandmarkResidual);
+    }
+
+    private int baseHeuristicFromStart(int packedPos) {
         int posX = WorldPointUtil.unpackWorldX(packedPos);
         int posY = WorldPointUtil.unpackWorldY(packedPos);
         int sx = WorldPointUtil.unpackWorldX(start);
@@ -259,6 +270,139 @@ public class Pathfinder implements Runnable {
         int direct = Math.max(dx, Math.abs(posY - sy));
         int wrapped = Math.max(dx, Math.abs(((posY % UNDERGROUND_Y_OFFSET) - (sy % UNDERGROUND_Y_OFFSET))));
         return Math.min(direct, wrapped);
+    }
+
+    // --- Network-transport-aware heuristic ---------------------------------------------------
+    //
+    // Network transports (fairy rings, spirit trees, gnome gliders, quetzals) are fully-connected
+    // hubs: reaching ANY origin lets you hop to ANY destination of that network for ~free. Plain
+    // Chebyshev is blind to this — a node next to the Ardougne fairy ring reads "~1350 tiles from
+    // the Farming Guild" by straight line, so A* buries the (optimal) cloak->fairy->CIR chain under
+    // a single direct teleport that the heuristic makes look closer. We fold the hubs into the
+    // heuristic as landmarks: for each enabled network whose destinations reach near the goal, every
+    // network origin is a landmark with residual = min(dest -> goal). Then
+    //     h(node) = min(directWalk, dist(node, nearestOrigin) + residual).
+    // Each landmark term is a true lower bound (walking to the origin, a free-ish hop, then the
+    // residual walk to goal), so taking min with the admissible Chebyshev keeps the result both
+    // admissible AND consistent (the landmark set is fixed for the whole search). A* optimality is
+    // therefore preserved, while the search is now pulled toward useful hubs instead of ignoring
+    // them. The backward (bidirectional) arrays are symmetric: landmarks are destinations, residual
+    // is min(origin -> start). Unlike the reverted chain-bridge injection this adds no graph edges
+    // (so it can never teleport the player out of a building), and unlike the reverted post-transport
+    // cascade it never zeroes the heuristic (so it can never collapse into a whole-map Dijkstra).
+    private static final EnumSet<TransportType> NETWORK_HEURISTIC_TYPES = EnumSet.of(
+            TransportType.FAIRY_RING, TransportType.SPIRIT_TREE,
+            TransportType.GNOME_GLIDER, TransportType.QUETZAL);
+
+    private int[] fwdLandmark = null;          // packed network origins (reach a hub -> hop toward target)
+    private int[] fwdLandmarkResidual = null;  // parallel: that network's min(dest -> nearest target) Chebyshev
+    private int[] backLandmark = null;         // packed network destinations (symmetric, for backward search)
+    private int[] backLandmarkResidual = null; // parallel: that network's min(origin -> start) Chebyshev
+
+    private int applyLandmarks(int packedPos, int base, int[] landmarks, int[] residuals) {
+        if (landmarks == null || landmarks.length == 0) {
+            return base;
+        }
+        int px = WorldPointUtil.unpackWorldX(packedPos);
+        int py = WorldPointUtil.unpackWorldY(packedPos);
+        int best = base;
+        for (int i = 0; i < landmarks.length; i++) {
+            int lx = WorldPointUtil.unpackWorldX(landmarks[i]);
+            int ly = WorldPointUtil.unpackWorldY(landmarks[i]);
+            int viaHub = Math.max(Math.abs(px - lx), Math.abs(py - ly)) + residuals[i];
+            if (viaHub < best) {
+                best = viaHub;
+            }
+        }
+        return best;
+    }
+
+    /**
+     * Builds {@link #fwdLandmark}/{@link #backLandmark} once per pathfind from the enabled network
+     * transports. A network only contributes landmarks if it gets you strictly closer to the goal
+     * (resp. start) than you already are — otherwise it is pure heuristic overhead with no benefit.
+     */
+    private void computeNetworkLandmarks() {
+        Map<WorldPoint, Set<Transport>> all = config.getTransports();
+        if (all == null || all.isEmpty()) {
+            return;
+        }
+
+        EnumMap<TransportType, Set<Integer>> originsByType = new EnumMap<>(TransportType.class);
+        EnumMap<TransportType, Set<Integer>> destsByType = new EnumMap<>(TransportType.class);
+        for (Set<Transport> set : all.values()) {
+            if (set == null) {
+                continue;
+            }
+            for (Transport t : set) {
+                TransportType type = t.getType();
+                if (type == null || !NETWORK_HEURISTIC_TYPES.contains(type)) {
+                    continue;
+                }
+                WorldPoint o = t.getOrigin();
+                WorldPoint d = t.getDestination();
+                if (o == null || d == null) {
+                    continue;
+                }
+                originsByType.computeIfAbsent(type, k -> new HashSet<>()).add(WorldPointUtil.packWorldPoint(o));
+                destsByType.computeIfAbsent(type, k -> new HashSet<>()).add(WorldPointUtil.packWorldPoint(d));
+            }
+        }
+        if (originsByType.isEmpty()) {
+            return;
+        }
+
+        int startToGoal = minChebyshevStartToAnyTarget();
+        List<int[]> fwd = new ArrayList<>();   // {originPacked, residual}
+        List<int[]> back = new ArrayList<>();  // {destPacked, residual}
+        for (Map.Entry<TransportType, Set<Integer>> e : originsByType.entrySet()) {
+            Set<Integer> origins = e.getValue();
+            Set<Integer> dests = destsByType.getOrDefault(e.getKey(), Collections.emptySet());
+            if (origins.isEmpty() || dests.isEmpty()) {
+                continue;
+            }
+
+            int residualFwd = Integer.MAX_VALUE;
+            for (int d : dests) {
+                residualFwd = Math.min(residualFwd, baseHeuristicToNearestTarget(d));
+            }
+            if (residualFwd < startToGoal) {
+                for (int o : origins) {
+                    fwd.add(new int[]{o, residualFwd});
+                }
+            }
+
+            int residualBack = Integer.MAX_VALUE;
+            for (int o : origins) {
+                residualBack = Math.min(residualBack, baseHeuristicFromStart(o));
+            }
+            if (residualBack < startToGoal) {
+                for (int d : dests) {
+                    back.add(new int[]{d, residualBack});
+                }
+            }
+        }
+
+        fwdLandmark = packLandmarkPositions(fwd);
+        fwdLandmarkResidual = packLandmarkResiduals(fwd);
+        backLandmark = packLandmarkPositions(back);
+        backLandmarkResidual = packLandmarkResiduals(back);
+    }
+
+    private static int[] packLandmarkPositions(List<int[]> landmarks) {
+        int[] out = new int[landmarks.size()];
+        for (int i = 0; i < out.length; i++) {
+            out[i] = landmarks.get(i)[0];
+        }
+        return out;
+    }
+
+    private static int[] packLandmarkResiduals(List<int[]> landmarks) {
+        int[] out = new int[landmarks.size()];
+        for (int i = 0; i < out.length; i++) {
+            out[i] = landmarks.get(i)[1];
+        }
+        return out;
     }
 
     private int minChebyshevStartToAnyTarget() {
@@ -599,6 +743,7 @@ public class Pathfinder implements Runnable {
         joinedPath = null;
         try {
             stats.start();
+            computeNetworkLandmarks();
             int minCheb = minChebyshevStartToAnyTarget();
             boolean useBidir = targetsPacked.length == 1
                     && minCheb >= BIDIRECTIONAL_MIN_CHEBYSHEV;

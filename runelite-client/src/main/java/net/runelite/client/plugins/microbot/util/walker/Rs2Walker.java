@@ -1618,56 +1618,70 @@ public class Rs2Walker {
                                 }
                             }
 
-                            // If we still can't resolve a blocker by interaction, do not stall.
-                            // Click a reachable "progress" tile that advances toward the target/path.
-                            // This keeps the walker responsive and usually moves us into the door's
-                            // interaction range.
-                            Set<WorldPoint> reachable = Rs2Tile.getReachableTilesFromTile(playerLoc, 5).keySet();
-                            if (reachable != null && !reachable.isEmpty()) {
-                                WorldPoint best = null;
-                                int bestDist = Integer.MAX_VALUE;
-                                for (WorldPoint wp : reachable) {
-                                    if (wp == null) continue;
-                                    // Prefer tiles that move closer to ultimate target.
-                                    int d = wp.distanceTo2D(target);
-                                    if (best == null || d < bestDist) {
-                                        best = wp;
-                                        bestDist = d;
-                                    }
-                                }
-                                if (best != null && !best.equals(playerLoc)) {
-                                    WorldPoint navTarget = getPointWithWallDistance(best);
-                                    boolean clicked = false;
-                                    // Prefer minimap for normal recovery movement. Scene-click fallback only on
-                                    // final-adjacent approach to prevent post-door canvas jumps mid-route.
-                                    clicked = Rs2Walker.walkMiniMap(navTarget);
-                                    if (!clicked
-                                            && target != null
-                                            && playerLoc.distanceTo2D(target) <= Math.max(2, distance + FINAL_ADJACENT_CANVAS_NUDGE_CHEBYSHEV)
-                                            && playerLoc.distanceTo2D(navTarget) <= DOOR_OPEN_CANVAS_NUDGE_MAX_FROM_PLAYER
-                                            && Rs2Tile.isTileReachable(navTarget)
-                                            && walkFastCanvas(navTarget)) {
-                                        clicked = true;
-                                        log.debug("[Walker] unreachable recovery: scene click -> {}", navTarget);
-                                    }
-                                    log.info("[Walker] unreachable recovery click: clicked={} to={} distToTarget={}",
-                                            clicked, best, bestDist);
-                                    if (clicked) {
-                                        markFirstMovementClick("first_recovery_click", target, playerLoc,
-                                                "to=" + compactWorldPoint(navTarget));
-                                        lastUnreachableRecoveryClickAtMs = System.currentTimeMillis();
-                                        WorldPoint pathLastRecovery = path.get(path.size() - 1);
-                                        int finishThRecovery = tightFinishThreshold(target, pathLastRecovery, distance);
-                                        waitUntilIdleAfterSceneWalk(target, POST_SCENE_WALK_IDLE_WAIT_MS_MAX, target,
-                                                finishThRecovery);
-                                        // Next outer iteration runs checkIfStuck/isStuckTooLong before tile delta — avoid
-                                        // spurious stall-recalc right after issuing recovery movement (door still closed).
-                                        lastMovedTimeMs = System.currentTimeMillis();
-                                        stuckCount = 0;
-                                    }
-                                    exitReason = "unreachable-recovery-click";
-                                    break;
-                                }
+                            // Door/obstacle detection above found nothing to open. The local
+                            // reachability BFS is bounded (~39 tiles) and is frequently a FALSE
+                            // negative — a viable route exists, just longer than the BFS radius or
+                            // behind a collision-map quirk. Rather than stall on an uncertain verdict,
+                            // click toward the actual path route on the minimap and let the server's
+                            // walk-here pathfinder take us as far as it can, then recover from there —
+                            // like a human clicking the furthest visible tile. We trust the server path
+                            // (no reachability gate on the click); isKnownWalkableOrUnloaded only keeps
+                            // us from clicking into a known wall, it is NOT the bounded BFS check.
+                            final int RECOVERY_MINIMAP_REACH_EUCLIDEAN = 13;
+                            int recoverIdx = findFurthestClickableIndex(path, i, playerLoc,
+                                    wp -> {
+                                        Set<Transport> ts = ShortestPathPlugin.getTransports().get(wp);
+                                        return ts != null && !ts.isEmpty();
+                                    },
+                                    RECOVERY_MINIMAP_REACH_EUCLIDEAN);
+                            recoverIdx = Math.min(Math.max(recoverIdx, indexOfStartPoint), path.size() - 1);
+                            WorldPoint recoverTarget = path.get(recoverIdx);
+                            if (euclideanSq(recoverTarget, playerLoc)
+                                    > RECOVERY_MINIMAP_REACH_EUCLIDEAN * RECOVERY_MINIMAP_REACH_EUCLIDEAN) {
+                                // Furthest in-range path tile still beyond the minimap clip (e.g. a
+                                // diagonal segment). Interpolate a point near the minimap edge toward
+                                // path[i]; the server routes through whatever blocks line-of-sight.
+                                recoverTarget = interpolateClickableTarget(path, i, playerLoc,
+                                        path.get(i), RECOVERY_MINIMAP_REACH_EUCLIDEAN - 1,
+                                        wp -> inInstance || isKnownWalkableOrUnloaded(wp));
+                            }
+                            boolean clicked = recoverTarget != null
+                                    && !recoverTarget.equals(playerLoc)
+                                    && Rs2Walker.walkMiniMap(recoverTarget);
+                            // Scene-click fallback only on final-adjacent approach (minimap click may
+                            // miss the clip when very close); kept gated on reachability since it is a
+                            // last resort, not the primary recovery path.
+                            if (!clicked && recoverTarget != null
+                                    && target != null
+                                    && playerLoc.distanceTo2D(target) <= Math.max(2, distance + FINAL_ADJACENT_CANVAS_NUDGE_CHEBYSHEV)
+                                    && playerLoc.distanceTo2D(recoverTarget) <= DOOR_OPEN_CANVAS_NUDGE_MAX_FROM_PLAYER
+                                    && Rs2Tile.isTileReachable(recoverTarget)
+                                    && walkFastCanvas(recoverTarget)) {
+                                clicked = true;
+                                log.debug("[Walker] unreachable recovery: scene click -> {}", recoverTarget);
+                            }
+                            log.info("[Walker] unreachable optimistic recovery: clicked={} to={} pathTile={} idx={}",
+                                    clicked, recoverTarget, currentWorldPoint, recoverIdx);
+                            if (clicked) {
+                                markFirstMovementClick("first_recovery_click", target, playerLoc,
+                                        "to=" + compactWorldPoint(recoverTarget));
+                                lastUnreachableRecoveryClickAtMs = System.currentTimeMillis();
+                                // Sticky interim: subsequent iterations travel toward this point via the
+                                // interim-in-flight path instead of re-running the (false-negative)
+                                // reachability check and re-clicking every tick.
+                                interimTargetWp = recoverTarget;
+                                interimTargetIdx = recoverIdx;
+                                interimSetAtMs = System.currentTimeMillis();
+                                WorldPoint pathLastRecovery = path.get(path.size() - 1);
+                                int finishThRecovery = tightFinishThreshold(target, pathLastRecovery, distance);
+                                waitUntilIdleAfterSceneWalk(target, POST_SCENE_WALK_IDLE_WAIT_MS_MAX, target,
+                                        finishThRecovery);
+                                // Next outer iteration runs checkIfStuck/isStuckTooLong before tile delta — avoid
+                                // spurious stall-recalc right after issuing recovery movement.
+                                lastMovedTimeMs = System.currentTimeMillis();
+                                stuckCount = 0;
+                                exitReason = "unreachable-recovery-click";
+                                break;
                             }
                             exitReason = "tile-unreachable-near-player";
                             break;
@@ -3279,7 +3293,7 @@ public class Rs2Walker {
                         || playerLoc.getPlane() != target.getPlane()
                         || t.getDestination().getPlane() == target.getPlane())
                 .filter(t -> pathPoints.contains(t.getDestination())
-                        || (!isNetworkTransport(t)
+                        || (!isRegionCrossingTransport(t)
                                 && target != null && t.getDestination().distanceTo(target) < playerLoc.distanceTo(target)))
                 .sorted(Comparator
                         .comparingInt((Transport t) -> pathPoints.contains(t.getDestination()) ? 0 : 1)
@@ -6263,6 +6277,31 @@ public class Rs2Walker {
             case FAIRY_RING:
             case QUETZAL:
             case GNOME_GLIDER:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Region-crossing transports (multi-destination networks plus long-haul water travel) must
+     * only be taken when their destination is explicitly on the planned path. Straight-line
+     * {@code distanceTo} is not a valid "progress toward target" metric for them: a boat/ship
+     * destination can be straight-line closer to the goal while actually sitting on a different
+     * landmass. Without this guard the opportunistic current-tile-transport branch fires a long
+     * voyage the pathfinder never chose — e.g. standing on the Fossil Island rowboat dock while
+     * the planned route teleports to Varlamore, the rowboat dest looked "closer" so the walker
+     * clicked the boat (and stalled ~17s on landing timeouts) before falling through to the
+     * actual teleport.
+     */
+    private static boolean isRegionCrossingTransport(Transport transport) {
+        if (transport == null || transport.getType() == null) return false;
+        if (isNetworkTransport(transport)) return true;
+        switch (transport.getType()) {
+            case BOAT:
+            case SHIP:
+            case CHARTER_SHIP:
+            case CANOE:
                 return true;
             default:
                 return false;

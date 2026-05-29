@@ -567,6 +567,10 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
     public void onGameTick(GameTick tick) {
         handlePendingLoginRefresh();
 
+        if (Rs2Walker.getCurrentTarget() != null) {
+            return;
+        }
+
         final WorldPoint myLoc = Rs2Player.getWorldLocation();
         final Pathfinder pathfinder = ShortestPathPlugin.pathfinder;
         if (myLoc == null || pathfinder == null || !pathfinder.isDone()) {
