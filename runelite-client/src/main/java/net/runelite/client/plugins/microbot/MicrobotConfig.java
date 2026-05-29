@@ -59,13 +59,21 @@ public interface MicrobotConfig extends Config
 		return true;
 	}
 
+	@ConfigSection(
+		name = "Movement",
+		description = "Movement and stamina settings. Plugins may override these, but any changes will be reflected here.",
+		position = 1,
+		closedByDefault = true
+	)
+	String movementSection = "movementSection";
+
 	String keyEnableAutoRunOn = "enableAutoRunOn";
 	@ConfigItem(
 		keyName = keyEnableAutoRunOn,
 		name = "Enable auto run",
 		description = "Automatically toggle run on when you have run energy",
-		position = 3,
-		section = generalSection
+		position = 0,
+		section = movementSection
 	)
 	default boolean enableAutoRunOn()
 	{
@@ -77,23 +85,10 @@ public interface MicrobotConfig extends Config
 		keyName = keyUseStaminaPotsIfNeeded,
 		name = "Use stamina potions",
 		description = "Automatically use stamina potions from inventory when run energy is low and the player is moving",
-		position = 4,
-		section = generalSection
+		position = 1,
+		section = movementSection
 	)
 	default boolean useStaminaPotsIfNeeded()
-	{
-		return true;
-	}
-
-	String keyEnableAutoLogin = "enableAutoLogin";
-	@ConfigItem(
-		keyName = keyEnableAutoLogin,
-		name = "Enable auto login",
-		description = "Automatically click the Play button on the welcome screen after logging in",
-		position = 5,
-		section = generalSection
-	)
-	default boolean enableAutoLogin()
 	{
 		return true;
 	}
@@ -101,13 +96,13 @@ public interface MicrobotConfig extends Config
 	@ConfigSection(
 		name = "Logging",
 		description = "Game chat logging configuration",
-		position = 1
+		position = 2
 	)
 	String loggingSection = "loggingSection";
 	@ConfigSection(
 			name = "Caching",
 			description = "Caching ingame data",
-			position = 2
+			position = 3
 	)
 	String cacheSection = "cacheSection";
 
