@@ -3277,11 +3277,19 @@ public class Rs2Walker {
             return false;
         }
 
-        Set<WorldPoint> pathPoints = new HashSet<>();
-        addForwardPathPoints(pathPoints, rawPath, playerLoc);
-        addForwardPathPoints(pathPoints, path, playerLoc);
+        Map<WorldPoint, Integer> forwardIndex = new HashMap<>();
+        addForwardPathIndices(forwardIndex, rawPath, playerLoc);
+        addForwardPathIndices(forwardIndex, path, playerLoc);
 
         WorldPoint priorOrigin = lastTransportOriginLocation;
+        // Trust the pathfinder: only take a current-tile transport whose destination is on the
+        // planned forward route, ordered by route position (earliest forward transport first). The
+        // old fallback admitted off-path transports whose destination was straight-line "closer" to
+        // the goal — but WorldPoint#distanceTo ignores the underground Y-offset, so an inner-region
+        // tile reads numerically closer to a surface goal. That made the walker re-take transports
+        // the pathfinder never chose: it looped forever on the Mor Ul Rek cave entrance/exit and
+        // stalled clicking the Fossil Island rowboat. The pathfinder already routed every transport
+        // it wants onto the path, so on-route membership is the correct, region-safe admission test.
         List<Transport> candidates = transports.stream()
                 .filter(t -> t.getDestination() != null)
                 // Local adjacent same-plane edges (doors/gates) are handled by segment door/object
@@ -3292,12 +3300,8 @@ public class Rs2Walker {
                 .filter(t -> target == null
                         || playerLoc.getPlane() != target.getPlane()
                         || t.getDestination().getPlane() == target.getPlane())
-                .filter(t -> pathPoints.contains(t.getDestination())
-                        || (!isRegionCrossingTransport(t)
-                                && target != null && t.getDestination().distanceTo(target) < playerLoc.distanceTo(target)))
-                .sorted(Comparator
-                        .comparingInt((Transport t) -> pathPoints.contains(t.getDestination()) ? 0 : 1)
-                        .thenComparingInt(t -> target == null ? 0 : t.getDestination().distanceTo(target)))
+                .filter(t -> forwardIndex.containsKey(t.getDestination()))
+                .sorted(Comparator.comparingInt(t -> forwardIndex.get(t.getDestination())))
                 .collect(Collectors.toList());
 
         for (Transport transport : candidates) {
@@ -3328,7 +3332,10 @@ public class Rs2Walker {
         return Rs2WalkerTransportAwaits.didCurrentTileTransportProgress(before, expectedDestination, target);
     }
 
-    private static void addForwardPathPoints(Set<WorldPoint> pathPoints, List<WorldPoint> path, WorldPoint playerLoc) {
+    // Maps each tile on the planned route at/after the player's closest index to its route position.
+    // Earliest index wins (putIfAbsent) so the raw path's index space is authoritative when the same
+    // tile appears in both the raw and smoothed paths (the smoothed path is a subset of the raw one).
+    private static void addForwardPathIndices(Map<WorldPoint, Integer> forwardIndex, List<WorldPoint> path, WorldPoint playerLoc) {
         if (path == null || path.isEmpty() || playerLoc == null) {
             return;
         }
@@ -3338,7 +3345,7 @@ public class Rs2Walker {
                 .min(Comparator.comparingInt(i -> playerLoc.distanceTo(path.get(i))))
                 .orElse(0);
         for (int i = closestIndex; i < path.size(); i++) {
-            pathPoints.add(path.get(i));
+            forwardIndex.putIfAbsent(path.get(i), i);
         }
     }
 
@@ -6268,44 +6275,6 @@ public class Rs2Walker {
             }
         }
         return false;
-    }
-
-    private static boolean isNetworkTransport(Transport transport) {
-        if (transport == null || transport.getType() == null) return false;
-        switch (transport.getType()) {
-            case SPIRIT_TREE:
-            case FAIRY_RING:
-            case QUETZAL:
-            case GNOME_GLIDER:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    /**
-     * Region-crossing transports (multi-destination networks plus long-haul water travel) must
-     * only be taken when their destination is explicitly on the planned path. Straight-line
-     * {@code distanceTo} is not a valid "progress toward target" metric for them: a boat/ship
-     * destination can be straight-line closer to the goal while actually sitting on a different
-     * landmass. Without this guard the opportunistic current-tile-transport branch fires a long
-     * voyage the pathfinder never chose — e.g. standing on the Fossil Island rowboat dock while
-     * the planned route teleports to Varlamore, the rowboat dest looked "closer" so the walker
-     * clicked the boat (and stalled ~17s on landing timeouts) before falling through to the
-     * actual teleport.
-     */
-    private static boolean isRegionCrossingTransport(Transport transport) {
-        if (transport == null || transport.getType() == null) return false;
-        if (isNetworkTransport(transport)) return true;
-        switch (transport.getType()) {
-            case BOAT:
-            case SHIP:
-            case CHARTER_SHIP:
-            case CANOE:
-                return true;
-            default:
-                return false;
-        }
     }
 
     private static boolean finishHandledTransport(Transport transport) {

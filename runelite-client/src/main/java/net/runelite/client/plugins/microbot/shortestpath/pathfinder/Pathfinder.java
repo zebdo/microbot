@@ -230,8 +230,8 @@ public class Pathfinder implements Runnable {
     // misdirects A* into expanding the surface southward instead of routing through a
     // nearby ladder/stairs transport. Taking min(direct, mod-6400) stays admissible
     // because reaching a y-mirrored underground point still requires ≥ one transport
-    // (cost ≥ 0) on top of the mod-6400 walking distance.
-    private static final int UNDERGROUND_Y_OFFSET = 6400;
+    // (cost ≥ 0) on top of the mod-6400 walking distance. The band-aware distance lives in
+    // WorldPointUtil.undergroundAwareDistance so the walker uses the same metric.
 
     private int heuristicToNearestTarget(int packedPos) {
         return applyLandmarks(packedPos, baseHeuristicToNearestTarget(packedPos),
@@ -245,10 +245,7 @@ public class Pathfinder implements Runnable {
         for (int target : targetsPacked) {
             int tx = WorldPointUtil.unpackWorldX(target);
             int ty = WorldPointUtil.unpackWorldY(target);
-            int dx = Math.abs(posX - tx);
-            int direct = Math.max(dx, Math.abs(posY - ty));
-            int wrapped = Math.max(dx, Math.abs(((posY % UNDERGROUND_Y_OFFSET) - (ty % UNDERGROUND_Y_OFFSET))));
-            int h = Math.min(direct, wrapped);
+            int h = WorldPointUtil.undergroundAwareDistance(posX, posY, tx, ty);
             if (h < best) {
                 best = h;
             }
@@ -266,10 +263,7 @@ public class Pathfinder implements Runnable {
         int posY = WorldPointUtil.unpackWorldY(packedPos);
         int sx = WorldPointUtil.unpackWorldX(start);
         int sy = WorldPointUtil.unpackWorldY(start);
-        int dx = Math.abs(posX - sx);
-        int direct = Math.max(dx, Math.abs(posY - sy));
-        int wrapped = Math.max(dx, Math.abs(((posY % UNDERGROUND_Y_OFFSET) - (sy % UNDERGROUND_Y_OFFSET))));
-        return Math.min(direct, wrapped);
+        return WorldPointUtil.undergroundAwareDistance(posX, posY, sx, sy);
     }
 
     // --- Network-transport-aware heuristic ---------------------------------------------------
