@@ -32,7 +32,7 @@ import java.awt.*;
  * - Retry mechanism with configurable attempts and delays
  * - In-game overlay showing break status and timers
  *
- * @version 2.0.0
+ * @version 2.0.1
  */
 @PluginDescriptor(
     name = PluginDescriptor.Default + "BreakHandler V2",
