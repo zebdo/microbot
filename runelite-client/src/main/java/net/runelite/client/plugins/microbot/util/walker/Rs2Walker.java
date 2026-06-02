@@ -1689,6 +1689,16 @@ public class Rs2Walker {
                     }
                     continue;
                 }
+                // A door was just interacted with (settling window still active) but traversal isn't
+                // yet confirmed, so this forward tile may sit *behind* the opening door. Issuing the
+                // minimap click now cancels the in-progress open ("click door, then immediately click
+                // the tile behind it"). Yield this pass; the next settled pass walks through. The
+                // unreachable / door-edge-resolution branch above is intentionally left alone — it
+                // waits on the door edge itself and issues its own resolution-aware fast click.
+                if (isDoorInteractionSettling()) {
+                    exitReason = "door-settling-yield";
+                    break;
+                }
                 nextWalkingDistance = path.size() <= 5 ? 0 : Rs2Random.between(9, 12);
                 int dist2d = currentWorldPoint.distanceTo2D(Rs2Player.getWorldLocation());
                 if (dist2d > nextWalkingDistance) {
@@ -3272,8 +3282,26 @@ public class Rs2Walker {
             return false;
         }
 
-        Set<Transport> transports = ShortestPathPlugin.getTransports().get(playerLoc);
-        if (transports == null || transports.isEmpty()) {
+        // Snappy proximity: consider usable transports whose origin is reachable within a few tiles
+        // of the player, not just the one on the exact player tile. NPC/"Follow" transports (e.g. Elkoy
+        // in the Tree Gnome Village maze) roam and sit a tile off the planned path, so exact-tile
+        // matching never sees them. The destination-on-forward-route gate below keeps this safe against
+        // off-path loops, and getTransports() is already the usable (config/quest/level-filtered) set,
+        // so we never grab a transport the pathfinder excluded.
+        final int NEARBY_TRANSPORT_REACH = 5;
+        Map<WorldPoint, Set<Transport>> transportsByOrigin = ShortestPathPlugin.getTransports();
+        Set<Transport> transports = new HashSet<>();
+        Set<Transport> transportsOnPlayerTile = transportsByOrigin.get(playerLoc);
+        if (transportsOnPlayerTile != null) {
+            transports.addAll(transportsOnPlayerTile);
+        }
+        for (WorldPoint reachableTile : Rs2Tile.getReachableTilesFromTile(playerLoc, NEARBY_TRANSPORT_REACH).keySet()) {
+            Set<Transport> ts = transportsByOrigin.get(reachableTile);
+            if (ts != null) {
+                transports.addAll(ts);
+            }
+        }
+        if (transports.isEmpty()) {
             return false;
         }
 
@@ -3282,7 +3310,7 @@ public class Rs2Walker {
         addForwardPathIndices(forwardIndex, path, playerLoc);
 
         WorldPoint priorOrigin = lastTransportOriginLocation;
-        // Trust the pathfinder: only take a current-tile transport whose destination is on the
+        // Trust the pathfinder: only take a nearby transport whose destination is on the
         // planned forward route, ordered by route position (earliest forward transport first). The
         // old fallback admitted off-path transports whose destination was straight-line "closer" to
         // the goal — but WorldPoint#distanceTo ignores the underground Y-offset, so an inner-region
@@ -3305,19 +3333,24 @@ public class Rs2Walker {
                 .collect(Collectors.toList());
 
         for (Transport transport : candidates) {
-            if (shouldThrottleCurrentTileTransportAttempt(playerLoc, transport.getDestination())) {
+            WorldPoint origin = transport.getOrigin() != null ? transport.getOrigin() : playerLoc;
+            if (shouldThrottleCurrentTileTransportAttempt(origin, transport.getDestination())) {
                 continue;
             }
-            markCurrentTileTransportAttempt(playerLoc, transport.getDestination());
+            markCurrentTileTransportAttempt(origin, transport.getDestination());
             WorldPoint before = Rs2Player.getWorldLocation();
-            if (handleTransports(Arrays.asList(playerLoc, transport.getDestination()), 0)) {
+            // Pass the transport's own origin so handleTransports walks the short hop to it before
+            // interacting (NPC dispatch already auto-walks via canWalkTo + interact); object/door
+            // interactions that can't be reached from here simply return false and we fall through.
+            if (handleTransports(Arrays.asList(origin, transport.getDestination()), 0)) {
                 if (didCurrentTileTransportProgress(before, transport.getDestination(), target)) {
-                    log.info("[Walker] Current-tile transport handler resolved obstacle near {}", playerLoc);
+                    log.info("[Walker] Nearby transport handler resolved obstacle: origin={} dest={} (player {})",
+                            origin, transport.getDestination(), playerLoc);
                     return true;
                 }
                 WebWalkLog.spInfo(
                         "current_tile_transport_no_progress | origin={} dest={} before={} after={} goal={}",
-                        compactWorldPoint(playerLoc),
+                        compactWorldPoint(origin),
                         compactWorldPoint(transport.getDestination()),
                         compactWorldPoint(before),
                         compactWorldPoint(Rs2Player.getWorldLocation()),
