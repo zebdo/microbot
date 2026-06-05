@@ -352,52 +352,112 @@ public abstract class Rs2Tile implements Tile {
 
     private static HashMap<WorldPoint, Integer> getReachableTilesFromTileInternal(WorldPoint tile, int distance, boolean ignoreCollision) {
         final HashMap<WorldPoint, Integer> tileDistances = new HashMap<>();
+        if (tile == null) return tileDistances;
+
+        final int[][] flags = getFlagsInternal();
+        if (flags == null) return tileDistances;
+
+        final WorldView wv = Microbot.getClient().getTopLevelWorldView();
+        final boolean isInstance = wv.getScene().isInstance();
+
+        final ArrayDeque<WorldPoint> queue = new ArrayDeque<>();
         tileDistances.put(tile, 0);
+        queue.add(tile);
 
-        for (int i = 0; i < distance + 1; i++) {
-            int dist = i;
-            for (var kvp : tileDistances.entrySet().stream().filter(x -> x.getValue() == dist).collect(Collectors.toList())) {
-                var point = kvp.getKey();
-                LocalPoint localPoint;
-                if (Microbot.getClient().getTopLevelWorldView().isInstance()) {
-                    WorldPoint worldPoint = WorldPoint.toLocalInstance(Microbot.getClient().getTopLevelWorldView(), point).stream().findFirst().orElse(null);
-                    if (worldPoint == null) break;
-                    localPoint = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), worldPoint);
-                } else
-                    localPoint = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), point);
+        while (!queue.isEmpty()) {
+            final WorldPoint point = queue.poll();
+            final int dist = tileDistances.get(point);
 
-                CollisionData[] collisionMap = Microbot.getClient().getTopLevelWorldView().getCollisionMaps();
-                if (collisionMap != null && localPoint != null) {
-                    CollisionData collisionData = collisionMap[Microbot.getClient().getTopLevelWorldView().getPlane()];
-                    int[][] flags = collisionData.getFlags();
-                    int data = flags[localPoint.getSceneX()][localPoint.getSceneY()];
+            final LocalPoint lp;
+            if (isInstance) {
+                WorldPoint instancePoint = WorldPoint.toLocalInstance(wv, point).stream().findFirst().orElse(null);
+                if (instancePoint == null) continue;
+                lp = LocalPoint.fromWorld(wv, instancePoint);
+            } else {
+                lp = LocalPoint.fromWorld(wv, point);
+            }
+            if (lp == null) continue;
 
-                    Set<MovementFlag> movementFlags = MovementFlag.getSetFlags(data);
+            final int sx = lp.getSceneX();
+            final int sy = lp.getSceneY();
+            if (!isWithinBounds(sx, sy)) continue;
 
-                    if (!ignoreCollision && !tile.equals(point)) {
-                        if (movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_FULL)
-                                || movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_FLOOR)) {
-                            tileDistances.remove(point);
-                            continue;
-                        }
-                    }
+            final int data = flags[sx][sy];
 
-                    if (kvp.getValue() >= distance)
-                        continue;
-
-                    if (!movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_EAST))
-                        tileDistances.putIfAbsent(point.dx(1), dist + 1);
-                    if (!movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_WEST))
-                        tileDistances.putIfAbsent(point.dx(-1), dist + 1);
-                    if (!movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_NORTH))
-                        tileDistances.putIfAbsent(point.dy(1), dist + 1);
-                    if (!movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_SOUTH))
-                        tileDistances.putIfAbsent(point.dy(-1), dist + 1);
+            if (!ignoreCollision && !tile.equals(point)) {
+                if ((data & CollisionDataFlag.BLOCK_MOVEMENT_FULL) != 0) {
+                    tileDistances.remove(point);
+                    continue;
                 }
+            }
+
+            if (dist >= distance) continue;
+
+            final boolean canE = ignoreCollision || (data & CollisionDataFlag.BLOCK_MOVEMENT_EAST) == 0;
+            final boolean canW = ignoreCollision || (data & CollisionDataFlag.BLOCK_MOVEMENT_WEST) == 0;
+            final boolean canN = ignoreCollision || (data & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0;
+            final boolean canS = ignoreCollision || (data & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) == 0;
+
+            if (canE) {
+                WorldPoint neighbor = point.dx(1);
+                if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
+                    queue.add(neighbor);
+            }
+            if (canW) {
+                WorldPoint neighbor = point.dx(-1);
+                if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
+                    queue.add(neighbor);
+            }
+            if (canN) {
+                WorldPoint neighbor = point.dy(1);
+                if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
+                    queue.add(neighbor);
+            }
+            if (canS) {
+                WorldPoint neighbor = point.dy(-1);
+                if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
+                    queue.add(neighbor);
+            }
+
+            if (canN && canE && isWithinBounds(sx + 1, sy) && isWithinBounds(sx, sy + 1) && isWithinBounds(sx + 1, sy + 1)
+                    && (ignoreCollision || (flags[sx + 1][sy] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_NORTH)) == 0)
+                    && (ignoreCollision || (flags[sx][sy + 1] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_EAST)) == 0)
+                    && (ignoreCollision || (flags[sx + 1][sy + 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0)) {
+                WorldPoint neighbor = new WorldPoint(point.getX() + 1, point.getY() + 1, point.getPlane());
+                if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
+                    queue.add(neighbor);
+            }
+            if (canN && canW && isWithinBounds(sx - 1, sy) && isWithinBounds(sx, sy + 1) && isWithinBounds(sx - 1, sy + 1)
+                    && (ignoreCollision || (flags[sx - 1][sy] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_NORTH)) == 0)
+                    && (ignoreCollision || (flags[sx][sy + 1] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_WEST)) == 0)
+                    && (ignoreCollision || (flags[sx - 1][sy + 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0)) {
+                WorldPoint neighbor = new WorldPoint(point.getX() - 1, point.getY() + 1, point.getPlane());
+                if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
+                    queue.add(neighbor);
+            }
+            if (canS && canE && isWithinBounds(sx + 1, sy) && isWithinBounds(sx, sy - 1) && isWithinBounds(sx + 1, sy - 1)
+                    && (ignoreCollision || (flags[sx + 1][sy] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_SOUTH)) == 0)
+                    && (ignoreCollision || (flags[sx][sy - 1] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_EAST)) == 0)
+                    && (ignoreCollision || (flags[sx + 1][sy - 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0)) {
+                WorldPoint neighbor = new WorldPoint(point.getX() + 1, point.getY() - 1, point.getPlane());
+                if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
+                    queue.add(neighbor);
+            }
+            if (canS && canW && isWithinBounds(sx - 1, sy) && isWithinBounds(sx, sy - 1) && isWithinBounds(sx - 1, sy - 1)
+                    && (ignoreCollision || (flags[sx - 1][sy] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_SOUTH)) == 0)
+                    && (ignoreCollision || (flags[sx][sy - 1] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_WEST)) == 0)
+                    && (ignoreCollision || (flags[sx - 1][sy - 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0)) {
+                WorldPoint neighbor = new WorldPoint(point.getX() - 1, point.getY() - 1, point.getPlane());
+                if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
+                    queue.add(neighbor);
             }
         }
 
         return tileDistances;
+    }
+
+    public static HashMap<WorldPoint, Integer> getReachableTilesFromTile(WorldPoint tile) {
+        return getReachableTilesFromTile(tile, Integer.MAX_VALUE, false);
     }
 
     /**
@@ -478,10 +538,48 @@ public abstract class Rs2Tile implements Tile {
             int y = point & 0xFFFF;
 
             if (isWithinBounds(x, y)) {
+                boolean canN = (flags[x][y] & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0;
+                boolean canS = (flags[x][y] & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) == 0;
+                boolean canE = (flags[x][y] & CollisionDataFlag.BLOCK_MOVEMENT_EAST) == 0;
+                boolean canW = (flags[x][y] & CollisionDataFlag.BLOCK_MOVEMENT_WEST) == 0;
+
                 checkAndAddNeighbour(queue, visited, flags, x, y, -1, 0, CollisionDataFlag.BLOCK_MOVEMENT_WEST);
                 checkAndAddNeighbour(queue, visited, flags, x, y, 1, 0, CollisionDataFlag.BLOCK_MOVEMENT_EAST);
                 checkAndAddNeighbour(queue, visited, flags, x, y, 0, -1, CollisionDataFlag.BLOCK_MOVEMENT_SOUTH);
                 checkAndAddNeighbour(queue, visited, flags, x, y, 0, 1, CollisionDataFlag.BLOCK_MOVEMENT_NORTH);
+
+                if (canN && canE && isWithinBounds(x + 1, y + 1)
+                        && !visited[x + 1][y + 1]
+                        && (flags[x + 1][y] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_NORTH)) == 0
+                        && (flags[x][y + 1] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_EAST)) == 0
+                        && (flags[x + 1][y + 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0) {
+                    queue.add(((x + 1) << 16) | (y + 1));
+                    visited[x + 1][y + 1] = true;
+                }
+                if (canN && canW && isWithinBounds(x - 1, y + 1)
+                        && !visited[x - 1][y + 1]
+                        && (flags[x - 1][y] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_NORTH)) == 0
+                        && (flags[x][y + 1] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_WEST)) == 0
+                        && (flags[x - 1][y + 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0) {
+                    queue.add(((x - 1) << 16) | (y + 1));
+                    visited[x - 1][y + 1] = true;
+                }
+                if (canS && canE && isWithinBounds(x + 1, y - 1)
+                        && !visited[x + 1][y - 1]
+                        && (flags[x + 1][y] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_SOUTH)) == 0
+                        && (flags[x][y - 1] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_EAST)) == 0
+                        && (flags[x + 1][y - 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0) {
+                    queue.add(((x + 1) << 16) | (y - 1));
+                    visited[x + 1][y - 1] = true;
+                }
+                if (canS && canW && isWithinBounds(x - 1, y - 1)
+                        && !visited[x - 1][y - 1]
+                        && (flags[x - 1][y] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_SOUTH)) == 0
+                        && (flags[x][y - 1] & (CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_WEST)) == 0
+                        && (flags[x - 1][y - 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0) {
+                    queue.add(((x - 1) << 16) | (y - 1));
+                    visited[x - 1][y - 1] = true;
+                }
             }
         }
 
