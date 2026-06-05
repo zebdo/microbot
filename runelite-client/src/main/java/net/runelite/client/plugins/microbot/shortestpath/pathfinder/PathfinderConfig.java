@@ -101,6 +101,8 @@ public class PathfinderConfig {
     private volatile long calculationCutoffMillis;
     @Getter
     private volatile boolean avoidWilderness;
+    @Getter
+    private volatile boolean useSpiritTrees;
     private volatile boolean useAgilityShortcuts,
             useGrappleShortcuts,
             useBoats,
@@ -112,7 +114,6 @@ public class PathfinderConfig {
             useMinecarts,
             usePoh,
             useQuetzals,
-            useSpiritTrees,
             useTeleportationLevers,
             useTeleportationMinigames,
             useTeleportationPortals,
@@ -197,20 +198,13 @@ public class PathfinderConfig {
         useCanoes = ShortestPathPlugin.override("useCanoes", config.useCanoes());
         useCharterShips = ShortestPathPlugin.override("useCharterShips", config.useCharterShips());
         useShips = ShortestPathPlugin.override("useShips", config.useShips());
-        useFairyRings = ShortestPathPlugin.override("useFairyRings", config.useFairyRings());
-        useGnomeGliders = ShortestPathPlugin.override("useGnomeGliders", config.useGnomeGliders());
         useMinecarts = ShortestPathPlugin.override("useMinecarts", config.useMinecarts());
         usePoh = ShortestPathPlugin.override("usePoh", config.usePoh());
-        useQuetzals = ShortestPathPlugin.override("useQuetzals", config.useQuetzals());
-        useSpiritTrees = ShortestPathPlugin.override("useSpiritTrees", config.useSpiritTrees());
         useSpiritTreeEtceteria = ShortestPathPlugin.override("spiritTreeEtceteria", config.spiritTreeEtceteria());
         useSpiritTreeBrimhaven = ShortestPathPlugin.override("spiritTreeBrimhaven", config.spiritTreeBrimhaven());
         useSpiritTreePortSarim = ShortestPathPlugin.override("spiritTreePortSarim", config.spiritTreePortSarim());
         useSpiritTreeHosidius = ShortestPathPlugin.override("spiritTreeHosidius", config.spiritTreeHosidius());
         useSpiritTreeFarmingGuild = ShortestPathPlugin.override("spiritTreeFarmingGuild", config.spiritTreeFarmingGuild());
-
-        // Keep the master spirit-tree toggle authoritative. Destination toggles only
-        // gate explicit optional destinations listed in SPIRIT_TREE_DESTINATIONS_ORDERED.
         useTeleportationItems = ShortestPathPlugin.override("useTeleportationItems", config.useTeleportationItems());
         useTeleportationMinigames = ShortestPathPlugin.override("useTeleportationMinigames", config.useTeleportationMinigames());
         useTeleportationLevers = ShortestPathPlugin.override("useTeleportationLevers", config.useTeleportationLevers());
@@ -267,10 +261,11 @@ public class PathfinderConfig {
             Set<Transport> existingTeleports = transports.get(key);
             if (existingTeleports != null) {
                 existingTeleports.addAll(usableWildyTeleports);
+                transportsPacked.put(packedLocation, existingTeleports);
             } else {
                 transports.put(key, usableWildyTeleports);
+                transportsPacked.put(packedLocation, usableWildyTeleports);
             }
-            transportsPacked.put(packedLocation, usableWildyTeleports);
         }
 
     }
@@ -302,14 +297,18 @@ public class PathfinderConfig {
      * @param target Optional target destination for optimized filtering (null for standard filtering)
      */
     private void refreshTransports(WorldPoint target) {
-        useFairyRings &= !QuestState.NOT_STARTED.equals(Rs2Player.getQuestState(Quest.FAIRYTALE_II__CURE_A_QUEEN))
+        useFairyRings = ShortestPathPlugin.override("useFairyRings", config.useFairyRings())
+                && !QuestState.NOT_STARTED.equals(Rs2Player.getQuestState(Quest.FAIRYTALE_II__CURE_A_QUEEN))
                 && (Rs2Inventory.contains(ItemID.DRAMEN_STAFF, ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)
                 || Rs2Equipment.isWearing(ItemID.DRAMEN_STAFF, ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)
                 || (ShortestPathPlugin.getPathfinderConfig().useBankItems && (Rs2Bank.hasItem(ItemID.DRAMEN_STAFF) || Rs2Bank.hasItem(ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)))
                 || Microbot.getVarbitValue(VarbitID.LUMBRIDGE_DIARY_ELITE_COMPLETE) == 1);
-        useGnomeGliders &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.THE_GRAND_TREE));
-        useSpiritTrees &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TREE_GNOME_VILLAGE));
-        useQuetzals &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TWILIGHTS_PROMISE));
+        useGnomeGliders = ShortestPathPlugin.override("useGnomeGliders", config.useGnomeGliders())
+                && QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.THE_GRAND_TREE));
+        useSpiritTrees = ShortestPathPlugin.override("useSpiritTrees", config.useSpiritTrees())
+                && QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TREE_GNOME_VILLAGE));
+        useQuetzals = ShortestPathPlugin.override("useQuetzals", config.useQuetzals())
+                && QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TWILIGHTS_PROMISE));
 
         final Rs2LeaguesTransport.LeaguesContext leaguesCtx = Rs2LeaguesTransport.leaguesContext();
         final int refreshCacheKeyHash = computeTransportRefreshCacheKeyHash(target, leaguesCtx);
@@ -432,12 +431,6 @@ public class PathfinderConfig {
         Rs2LeaguesTransport.injectLeaguesTransports(this, leaguesCtx, usableTeleports, transports, transportsPacked, typeStats);
         long filterTime = System.currentTimeMillis() - filterStart;
 
-        long similarStart = System.currentTimeMillis();
-        if (useBankItems && config.maxSimilarTransportDistance() > 0) {
-            filterSimilarTransports(target);
-        }
-        long similarTime = System.currentTimeMillis() - similarStart;
-
         int[] sortedVarbits = varbitIds.stream().mapToInt(Integer::intValue).sorted().toArray();
         int[] sortedVarplayers = varplayerIds.stream().mapToInt(Integer::intValue).sorted().toArray();
         int[] sortedQuestIds = mergedList.values().stream()
@@ -454,6 +447,12 @@ public class PathfinderConfig {
         int verificationHash = computeTransportRefreshVerificationHash(refreshBoostedLevels, sortedVarbits, sortedVarplayers, sortedQuestIds);
         transportRefreshSnapshot = TransportRefreshSnapshot.capture(
                 refreshCacheKeyHash, verificationHash, sortedVarbits, sortedVarplayers, sortedQuestIds, transports, usableTeleports);
+
+        long similarStart = System.currentTimeMillis();
+        if (useBankItems && config.maxSimilarTransportDistance() > 0) {
+            filterSimilarTransports(target);
+        }
+        long similarTime = System.currentTimeMillis() - similarStart;
 
         refreshAvailableItemIds = null;
         refreshBoostedLevels = null;
@@ -806,8 +805,8 @@ public class PathfinderConfig {
             log.debug("Transport ( O: {} D: {} ) requires members world", transport.getOrigin(), transport.getDestination());
             return false;
         }
-        if (transport.getType() == TransportType.SPIRIT_TREE && !isSpiritTreeDestinationEnabled(transport)) {
-            log.debug("Transport ( O: {} D: {} ) is a spirit tree route but the destination is disabled", transport.getOrigin(), transport.getDestination());
+        if (transport.getType() == TransportType.SPIRIT_TREE && !isSpiritTreeRouteEnabled(transport)) {
+            log.debug("Transport ( O: {} D: {} ) is a spirit tree route but the tree is disabled", transport.getOrigin(), transport.getDestination());
             return false;
         }
         // If you don't meet level requirements
@@ -959,14 +958,16 @@ public class PathfinderConfig {
         }
     }
 
-    private boolean isSpiritTreeDestinationEnabled(Transport transport) {
+    private boolean isSpiritTreeRouteEnabled(Transport transport) {
+        WorldPoint origin = transport.getOrigin();
         WorldPoint destination = transport.getDestination();
-        if (destination == null) {
-            return true;
-        }
         for (int i = 0; i < SPIRIT_TREE_DESTINATIONS_ORDERED.length; i++) {
-            if (destination.equals(SPIRIT_TREE_DESTINATIONS_ORDERED[i])) {
-                return spiritTreeDestinationToggle(i);
+            if (!spiritTreeDestinationToggle(i)) {
+                WorldPoint toggledPoint = SPIRIT_TREE_DESTINATIONS_ORDERED[i];
+                if ((destination != null && destination.equals(toggledPoint))
+                        || (origin != null && origin.distanceTo2D(toggledPoint) <= 5)) {
+                    return false;
+                }
             }
         }
         return true;
@@ -1415,7 +1416,6 @@ public class PathfinderConfig {
 
     private int computeTransportRefreshCacheKeyHash(WorldPoint target, Rs2LeaguesTransport.LeaguesContext leaguesCtx) {
         assert leaguesCtx != null;
-        int targetPacked = target == null ? 0 : WorldPointUtil.packWorldPoint(target);
         int invFp = fingerprintInventoryEquipmentBank();
         int members = (client != null && client.getWorldType().contains(WorldType.MEMBERS)) ? 1 : 0;
         int preferTp = (config != null && config.preferTransportToTarget()) ? 1 : 0;
@@ -1426,7 +1426,6 @@ public class PathfinderConfig {
                 ignoreTeleportAndItems,
                 useBankItems,
                 useNpcs,
-                targetPacked,
                 invFp,
                 members,
                 Rs2Walker.disableTeleports,

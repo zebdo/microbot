@@ -106,6 +106,29 @@ public class WorldPointUtil {
         return Integer.MAX_VALUE;
     }
 
+    // OSRS shifts underground coords by +6400 on the Y axis (e.g. Varrock sewers at y≈9800 sit
+    // under Varrock at y≈3400). Plain straight-line distance across this offset is meaningless and
+    // misleads "is this closer to the goal" checks. See Pathfinder's admissible heuristic.
+    public static final int UNDERGROUND_Y_OFFSET = 6400;
+
+    /**
+     * Chebyshev (2D) distance that tolerates the surface↔underground Y-offset convention: it takes
+     * the smaller of the direct distance and the distance after folding both Y coords into the
+     * [0, {@link #UNDERGROUND_Y_OFFSET}) band. This keeps an underground tile and its surface
+     * neighbour "close" (one transport apart) instead of ~6400 tiles apart. Same formula the
+     * pathfinder heuristic uses, so the walker and pathfinder agree on what "toward the goal" means.
+     */
+    public static int undergroundAwareDistance(int x1, int y1, int x2, int y2) {
+        final int dx = Math.abs(x1 - x2);
+        final int direct = Math.max(dx, Math.abs(y1 - y2));
+        final int wrapped = Math.max(dx, Math.abs((y1 % UNDERGROUND_Y_OFFSET) - (y2 % UNDERGROUND_Y_OFFSET)));
+        return Math.min(direct, wrapped);
+    }
+
+    public static int undergroundAwareDistance(WorldPoint a, WorldPoint b) {
+        return undergroundAwareDistance(a.getX(), a.getY(), b.getX(), b.getY());
+    }
+
     public static int distanceBetween(WorldPoint previous, WorldPoint current) {
         return distanceBetween(previous, current, 1);
     }

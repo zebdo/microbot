@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.util.walker.shared;
 
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.client.plugins.microbot.shortestpath.WorldPointUtil;
 
 public final class Rs2WalkerProgress {
     private Rs2WalkerProgress() {
@@ -23,7 +24,11 @@ public final class Rs2WalkerProgress {
         if (before == null || now == null || target == null) {
             return false;
         }
-        return now.distanceTo2D(target) < before.distanceTo2D(target);
+        // Band-aware distance: plain distanceTo2D ignores the underground Y-offset, so a sideways
+        // hop within an underground region can read as "closer" to a surface goal. Using the same
+        // metric the pathfinder uses keeps this honest (e.g. re-entering Mor Ul Rek is not progress).
+        return WorldPointUtil.undergroundAwareDistance(now, target)
+                < WorldPointUtil.undergroundAwareDistance(before, target);
     }
 
     public static boolean isWithinChebyshev(WorldPoint from, WorldPoint to, int maxInclusive) {

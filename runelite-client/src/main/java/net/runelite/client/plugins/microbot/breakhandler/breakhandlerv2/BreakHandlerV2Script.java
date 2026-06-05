@@ -78,7 +78,7 @@ public class BreakHandlerV2Script extends Script {
     private static final int MAX_SAFETY_CHECK_ATTEMPTS = 60;
     private static final int SAFETY_CHECK_DELAY_MS = 5000; // 5 seconds between checks
 
-    public static String version = "2.0.0";
+    public static String version = "2.0.1";
 
     /**
      * Run the break handler script
@@ -525,8 +525,16 @@ public class BreakHandlerV2Script extends Script {
             return;
         }
 
+        // Transient game states during region/plane transitions (e.g. climbing the Mining Guild
+        // ladder to bank) briefly report !isLoggedIn() with GameState LOADING/HOPPING/LOGGING_IN.
+        // Those are NOT logouts; treating them as one fires a false break cycle that reschedules
+        // the next break and can starve real breaks entirely. Only act on a genuine logged-out
+        // GameState (LOGIN_SCREEN / CONNECTION_LOST), not the transition states.
+        GameState gameState = Microbot.getClient() != null ? Microbot.getClient().getGameState() : null;
+        boolean genuinelyLoggedOut = gameState == GameState.LOGIN_SCREEN || gameState == GameState.CONNECTION_LOST;
+
         // Check if player is logged out unexpectedly
-        if (!Microbot.isLoggedIn() && !unexpectedLogoutDetected) {
+        if (genuinelyLoggedOut && !unexpectedLogoutDetected) {
             long secondsUntilBreak = Instant.now().until(nextBreakTime, ChronoUnit.SECONDS);
 
             if (secondsUntilBreak > 0) {
