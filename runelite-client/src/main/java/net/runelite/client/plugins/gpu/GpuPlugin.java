@@ -177,13 +177,14 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 
 	private VAOList vaoO;
 	private VAOList vaoA;
-	private VAOList vaoPO;
 
 	private SceneUploader clientUploader, mapUploader;
 	private FacePrioritySorter facePrioritySorter;
 
 	static class SceneContext
 	{
+		final float[] projection = Mat4.identity();
+
 		final int sizeX, sizeZ;
 		Zone[][] zones;
 
@@ -250,7 +251,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	private int uniExpandedMapLoadingChunks;
 	private int uniSmoothBanding;
 	private int uniWorldProj;
-	private static int uniEntityProj;
+	static int uniEntityProj;
 	static int uniEntityTint;
 	private int uniBrightness;
 	private int uniTex;
@@ -266,7 +267,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	private int uniUiColorblindIntensity;
 	static int uniBase;
 
-	private static Projection lastProjection;
+	static final float[] IDENTITY = Mat4.identity();
 
 	@Override
 	protected void startUp()
@@ -666,7 +667,6 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 
 		vaoO = new VAOList();
 		vaoA = new VAOList();
-		vaoPO = new VAOList();
 	}
 
 	private void initGlBuffer(GLBuffer glBuffer)
@@ -688,11 +688,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		{
 			vaoA.free();
 		}
-		if (vaoPO != null)
-		{
-			vaoPO.free();
-		}
-		vaoO = vaoA = vaoPO = null;
+		vaoO = vaoA = null;
 	}
 
 	private void destroyGlBuffer(GLBuffer glBuffer)
@@ -790,32 +786,24 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		}
 	}
 
-	static void updateEntityProjection(Projection projection)
-	{
-		if (lastProjection != projection)
-		{
-			float[] p = projection instanceof FloatProjection ? ((FloatProjection) projection).getProjection() : Mat4.identity();
-			glUniformMatrix4fv(uniEntityProj, false, p);
-			lastProjection = projection;
-		}
-	}
-
 	@Override
-	public void preSceneDraw(Scene scene,
+	public void preSceneDraw(Scene scene, Projection entityProjection,
 		float cameraX, float cameraY, float cameraZ, float cameraPitch, float cameraYaw,
 		int minLevel, int level, int maxLevel, Set<Integer> hideRoofIds)
 	{
 		SceneContext ctx = context(scene);
-		if (ctx != null)
+		if (ctx == null)
 		{
-			ctx.cameraX = (int) cameraX;
-			ctx.cameraY = (int) cameraY;
-			ctx.cameraZ = (int) cameraZ;
-			ctx.minLevel = minLevel;
-			ctx.level = level;
-			ctx.maxLevel = maxLevel;
-			ctx.hideRoofIds = hideRoofIds;
+			return;
 		}
+
+		ctx.cameraX = (int) cameraX;
+		ctx.cameraY = (int) cameraY;
+		ctx.cameraZ = (int) cameraZ;
+		ctx.minLevel = minLevel;
+		ctx.level = level;
+		ctx.maxLevel = maxLevel;
+		ctx.hideRoofIds = hideRoofIds;
 
 		if (scene.getWorldViewId() == WorldView.TOPLEVEL)
 		{
@@ -825,9 +813,8 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		}
 		else
 		{
-			Scene toplevel = client.getScene();
-			vaoO.addRange(null, toplevel);
-			vaoPO.addRange(null, toplevel);
+			System.arraycopy(((FloatProjection) entityProjection).getProjection(), 0, ctx.projection, 0, 16);
+			glUniformMatrix4fv(uniEntityProj, false, ctx.projection);
 			glUniform4i(uniEntityTint, scene.getOverrideHue(), scene.getOverrideSaturation(), scene.getOverrideLuminance(), scene.getOverrideAmount());
 		}
 	}
@@ -896,12 +883,6 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboScene);
 		}
 
-		// Clear scene
-		int sky = client.getSkyboxColor();
-		glClearColor((sky >> 16 & 0xFF) / 255f, (sky >> 8 & 0xFF) / 255f, (sky & 0xFF) / 255f, 1f);
-		glClearDepth(0d);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 		// Setup anisotropic filtering
 		final int anisotropicFilteringLevel = config.anisotropicFilteringLevel();
 
@@ -944,6 +925,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		// Setup uniforms
 		final int drawDistance = getDrawDistance();
 		final int fogDepth = config.fogDepth();
+		final int sky = client.getSkyboxColor();
 		glUniform1i(uniUseFog, fogDepth > 0 ? 1 : 0);
 		glUniform4f(uniFogColor, (sky >> 16 & 0xFF) / 255f, (sky >> 8 & 0xFF) / 255f, (sky & 0xFF) / 255f, 1f);
 		glUniform1i(uniFogDepth, fogDepth);
@@ -970,8 +952,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		Mat4.mul(projectionMatrix, Mat4.translate(-cameraX, -cameraY, -cameraZ));
 		glUniformMatrix4fv(uniWorldProj, false, projectionMatrix);
 
-		projectionMatrix = Mat4.identity();
-		glUniformMatrix4fv(uniEntityProj, false, projectionMatrix);
+		glUniformMatrix4fv(uniEntityProj, false, IDENTITY);
 
 		glUniform4i(uniEntityTint, 0, 0, 0, 0);
 
@@ -990,7 +971,36 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		glDepthFunc(GL_GREATER);
 		glEnable(GL_DEPTH_TEST);
 
+		drawSkybox(scene, sky, cameraX, cameraY, cameraZ);
+
 		checkGLErrors();
+	}
+
+	private void drawSkybox(Scene scene, int sky, float cameraX, float cameraY, float cameraZ)
+	{
+		Model skybox = scene.getSkybox();
+		if (skybox == null)
+		{
+			glClearColor((sky >> 16 & 0xFF) / 255f, (sky >> 8 & 0xFF) / 255f, (sky & 0xFF) / 255f, 1f);
+			glClearDepth(0d);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			return;
+		}
+
+		glClearColor(0f, 0f, 0f, 1f);
+		glClearDepth(0d);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		int size = skybox.getFaceCount() * 3 * VAO.VERT_SIZE;
+		VAO o = vaoO.get(size);
+		clientUploader.uploadTempModel(skybox, 0, 0, 0, 0, o.vbo.vb);
+
+		float[] skyboxProjection = Mat4.translate(cameraX, cameraY, cameraZ);
+		o.addRange(skyboxProjection, scene, Renderable.RENDERMODE_UNSORTED_NO_DEPTH);
+
+		vaoO.draw();
+
+		glUniformMatrix4fv(uniEntityProj, false, IDENTITY);
 	}
 
 	@Override
@@ -1003,6 +1013,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		else
 		{
 			glUniform4i(uniEntityTint, 0, 0, 0, 0);
+			glUniformMatrix4fv(uniEntityProj, false, IDENTITY);
 		}
 	}
 
@@ -1042,8 +1053,6 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	@Override
 	public void drawZoneOpaque(Projection entityProjection, Scene scene, int zx, int zz)
 	{
-		updateEntityProjection(entityProjection);
-
 		SceneContext ctx = context(scene);
 		if (ctx == null)
 		{
@@ -1082,9 +1091,6 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 			return;
 		}
 
-		updateEntityProjection(entityProjection);
-		glUniform4i(uniEntityTint, scene.getOverrideHue(), scene.getOverrideSaturation(), scene.getOverrideLuminance(), scene.getOverrideAmount());
-
 		int offset = scene.getWorldViewId() == WorldView.TOPLEVEL ? (SCENE_OFFSET >> 3) : 0;
 		int dx = ctx.cameraX - ((zx - offset) << 10);
 		int dz = ctx.cameraZ - ((zz - offset) << 10);
@@ -1110,45 +1116,15 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 			return;
 		}
 
-		updateEntityProjection(projection);
-
 		if (pass == DrawCallbacks.PASS_OPAQUE)
 		{
-			vaoO.addRange(projection, scene);
-			vaoPO.addRange(projection, scene);
-
 			if (scene.getWorldViewId() == WorldView.TOPLEVEL)
 			{
-				glUniform3i(uniBase, 0, 0, 0);
-
-				int sz = vaoO.unmap();
-				for (int i = 0; i < sz; ++i)
-				{
-					VAO vao = vaoO.vaos.get(i);
-					vao.draw();
-					vao.reset();
-				}
-
-				sz = vaoPO.unmap();
-				if (sz > 0)
-				{
-					glDepthMask(false);
-					for (int i = 0; i < sz; ++i)
-					{
-						VAO vao = vaoPO.vaos.get(i);
-						vao.draw();
-					}
-					glDepthMask(true);
-
-					glColorMask(false, false, false, false);
-					for (int i = 0; i < sz; ++i)
-					{
-						VAO vao = vaoPO.vaos.get(i);
-						vao.draw();
-						vao.reset();
-					}
-					glColorMask(true, true, true, true);
-				}
+				vaoO.draw();
+			}
+			else
+			{
+				glUniformMatrix4fv(uniEntityProj, false, IDENTITY);
 			}
 		}
 		else if (pass == DrawCallbacks.PASS_ALPHA)
@@ -1161,6 +1137,11 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 					zone.removeTemp();
 				}
 			}
+		}
+		else if (pass == DrawCallbacks.PRE_PASS_ALPHA)
+		{
+			glUniformMatrix4fv(uniEntityProj, false, ctx.projection);
+			glUniform4i(uniEntityTint, scene.getOverrideHue(), scene.getOverrideSaturation(), scene.getOverrideLuminance(), scene.getOverrideAmount());
 		}
 
 		checkGLErrors();
@@ -1185,6 +1166,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		{
 			VAO o = vaoO.get(size);
 			clientUploader.uploadTempModel(m, orient, x, y, z, o.vbo.vb);
+			o.addRange(ctx.projection, scene, 0);
 		}
 		else
 		{
@@ -1200,6 +1182,8 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 				log.debug("error drawing entity", ex);
 			}
 			int end = a.vbo.vb.position();
+
+			o.addRange(ctx.projection, scene, 0);
 
 			if (end > start)
 			{
@@ -1236,10 +1220,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		int renderMode = renderable.getRenderMode();
 		if (renderMode == Renderable.RENDERMODE_SORTED_NO_DEPTH || m.getFaceTransparencies() != null)
 		{
-			// opaque player faces have their own vao and are drawn in a separate pass from normal opaque faces
-			// because they are not depth tested. transparent player faces don't need their own vao because normal
-			// transparent faces are already not depth tested
-			VAO o = renderMode == Renderable.RENDERMODE_SORTED_NO_DEPTH ? vaoPO.get(size) : vaoO.get(size);
+			VAO o = vaoO.get(size);
 			VAO a = vaoA.get(size);
 
 			int start = a.vbo.vb.position();
@@ -1253,6 +1234,8 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 				log.debug("error drawing entity", ex);
 			}
 			int end = a.vbo.vb.position();
+
+			o.addRange(ctx.projection, scene, renderMode == Renderable.RENDERMODE_SORTED_NO_DEPTH ? renderMode : 0);
 
 			if (end > start)
 			{
@@ -1268,6 +1251,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		{
 			VAO o = vaoO.get(size);
 			clientUploader.uploadTempModel(m, orient, x, y, z, o.vbo.vb);
+			o.addRange(ctx.projection, scene, 0);
 		}
 	}
 
