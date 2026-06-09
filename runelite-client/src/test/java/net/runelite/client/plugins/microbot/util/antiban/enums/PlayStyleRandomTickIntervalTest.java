@@ -32,7 +32,10 @@ public class PlayStyleRandomTickIntervalTest {
 
 	@Test
 	public void getRandomTickIntervalDoesNotThrowWhenIntervalsCross() throws Exception {
-		PlayStyle style = PlayStyle.values()[0];
+		// A specific constant (not values()[0]) so enum reordering cannot change what is tested.
+		// The intervals are restored in the finally block, so the shared enum singleton is left
+		// untouched for other tests; the unit-test suite runs single-threaded.
+		PlayStyle style = PlayStyle.MODERATE;
 		int origPrimary = getInterval(style, "primaryTickInterval");
 		int origSecondary = getInterval(style, "secondaryTickInterval");
 		try {
