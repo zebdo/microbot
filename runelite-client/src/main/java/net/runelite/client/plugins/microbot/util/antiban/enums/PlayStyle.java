@@ -111,7 +111,12 @@ public enum PlayStyle {
     }
 
     public int getRandomTickInterval() {
-        return ThreadLocalRandom.current().nextInt(primaryTickInterval, secondaryTickInterval + 1);
+        // primaryTickInterval and secondaryTickInterval drift independently in evolvePlayStyle()
+        // and can cross (primary > secondary). nextInt(origin, bound) requires bound > origin, so
+        // order the bounds defensively to avoid IllegalArgumentException.
+        int lo = Math.min(primaryTickInterval, secondaryTickInterval);
+        int hi = Math.max(primaryTickInterval, secondaryTickInterval);
+        return ThreadLocalRandom.current().nextInt(lo, hi + 1);
     }
 
     public void evolvePlayStyle() {
