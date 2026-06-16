@@ -38,6 +38,8 @@ fun loadRootProperty(name: String): String? {
 
 val microbotVersionProvider = providers.gradleProperty("microbot.version")
     .orElse(loadRootProperty("microbot.version") ?: "0.0.0")
+val injectedClientVersionProvider = providers.gradleProperty("runelite.injected-client.version")
+    .orElse(loadRootProperty("runelite.injected-client.version") ?: project.version.toString())
 
 plugins {
     java
@@ -326,7 +328,7 @@ java {
 dependencies {
     api("net.runelite:runelite-api:${project.version}")
     implementation(project(":jshell"))
-    runtimeOnly("net.runelite:injected-client:${project.version}")
+    runtimeOnly("net.runelite:injected-client:${injectedClientVersionProvider.get()}")
 
     api(libs.rl.http.api)
     api(libs.rl.discord)
