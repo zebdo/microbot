@@ -236,7 +236,7 @@ public interface Client extends OAuthApi, GameEngine
 	 * @see #getCameraX()
 	 * @return
 	 */
-	double getCameraFpX();
+	float getCameraFpX();
 
 	/**
 	 * Gets the y-axis coordinate of the camera.
@@ -253,7 +253,7 @@ public interface Client extends OAuthApi, GameEngine
 	 * @see #getCameraY()
 	 * @return
 	 */
-	double getCameraFpY();
+	float getCameraFpY();
 
 	/**
 	 * Gets the z-axis coordinate of the camera.
@@ -270,7 +270,7 @@ public interface Client extends OAuthApi, GameEngine
 	 * @see #getCameraZ()
 	 * @return
 	 */
-	double getCameraFpZ();
+	float getCameraFpZ();
 
 	/**
 	 * Gets the pitch of the camera.
@@ -287,7 +287,7 @@ public interface Client extends OAuthApi, GameEngine
 	 * @see #getCameraPitch()
 	 * @return
 	 */
-	double getCameraFpPitch();
+	float getCameraFpPitch();
 
 	/**
 	 * Gets the yaw of the camera.
@@ -301,7 +301,7 @@ public interface Client extends OAuthApi, GameEngine
 	 * @see #getCameraYaw()
 	 * @return
 	 */
-	double getCameraFpYaw();
+	float getCameraFpYaw();
 
 	/**
 	 * Gets the current world number of the logged in player.

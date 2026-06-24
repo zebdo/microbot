@@ -121,7 +121,7 @@ public class Rs2Reflection {
                         cachedOuterField = outerField;
                         cachedListField = listField;
                         cachedStringField = null;
-                        return toStringArray(list);
+                        return groundItemActionsOrDefault(toStringArray(list));
                     }
 
                     Field stringField = null;
@@ -133,12 +133,12 @@ public class Rs2Reflection {
                     cachedOuterField = outerField;
                     cachedListField = listField;
                     cachedStringField = stringField;
-                    return extractFromBeans(list, stringField);
+                    return groundItemActionsOrDefault(extractFromBeans(list, stringField));
                 }
             }
         }
 
-        return new String[]{};
+        return defaultGroundItemActions();
     }
 
     private static String[] extractWithCache(ItemComposition item) throws Exception {
@@ -153,8 +153,23 @@ public class Rs2Reflection {
         if (!(listObj instanceof ArrayList)) return new String[]{};
 
         ArrayList<?> list = (ArrayList<?>) listObj;
-        if (cachedStringField == null) return toStringArray(list);
-        return extractFromBeans(list, cachedStringField);
+        if (cachedStringField == null) return groundItemActionsOrDefault(toStringArray(list));
+        return groundItemActionsOrDefault(extractFromBeans(list, cachedStringField));
+    }
+
+    private static String[] groundItemActionsOrDefault(String[] actions) {
+        if (actions != null) {
+            for (String action : actions) {
+                if (action != null && !action.isBlank()) {
+                    return actions;
+                }
+            }
+        }
+        return defaultGroundItemActions();
+    }
+
+    private static String[] defaultGroundItemActions() {
+        return new String[]{null, null, "Take", null, null};
     }
 
     private static String[] toStringArray(ArrayList<?> list) {
@@ -190,4 +205,3 @@ public class Rs2Reflection {
                 .invoke(menuEntry, itemId); //use the setItemId method through reflection
     }
 }
-
