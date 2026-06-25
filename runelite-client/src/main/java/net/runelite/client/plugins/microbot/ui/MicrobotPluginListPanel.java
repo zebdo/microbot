@@ -46,6 +46,7 @@ import net.runelite.client.plugins.microbot.MicrobotConfig;
 import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginManager;
 import net.runelite.client.plugins.microbot.ui.search.MicrobotPluginSearch;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.util.Text;
@@ -69,6 +70,9 @@ import java.util.stream.Stream;
 @Slf4j
 @Singleton
 public class MicrobotPluginListPanel extends MicrobotPluginPanel {
+    static final int LIST_VIEW_WIDTH = PluginPanel.PANEL_WIDTH - PluginPanel.SCROLLBAR_WIDTH;
+    static final int LIST_ITEM_WIDTH = LIST_VIEW_WIDTH - 20;
+
     private static final String RUNELITE_GROUP_NAME = MicrobotConfig.class.getAnnotation(ConfigGroup.class).value();
     private static final String PINNED_PLUGINS_CONFIG_KEY = "pinnedPlugins";
     private static final ImmutableList<String> CATEGORY_TAGS = ImmutableList.of(
@@ -159,17 +163,18 @@ public class MicrobotPluginListPanel extends MicrobotPluginPanel {
         topPanel.add(searchBar, BorderLayout.CENTER);
         add(topPanel, BorderLayout.NORTH);
 
-        mainPanel = new MicrobotFixedWidthPanel();
+        mainPanel = new MicrobotFixedWidthPanel(LIST_VIEW_WIDTH);
         mainPanel.setBorder(new EmptyBorder(8, 10, 10, 10));
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setLayout(new DynamicGridLayout(0, 1, 0, 5));
         mainPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JPanel northPanel = new MicrobotFixedWidthPanel();
+        JPanel northPanel = new MicrobotFixedWidthPanel(LIST_VIEW_WIDTH);
         northPanel.setLayout(new BorderLayout());
         northPanel.add(mainPanel, BorderLayout.NORTH);
 
         scrollPane = new JScrollPane(northPanel);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         add(scrollPane, BorderLayout.CENTER);
     }
 

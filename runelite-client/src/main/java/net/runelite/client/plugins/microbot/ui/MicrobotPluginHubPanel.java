@@ -78,6 +78,7 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
     private static final ImageIcon HELP_ICON;
     private static final ImageIcon CONFIGURE_ICON;
     private static final Pattern SPACES = Pattern.compile(" +");
+    private static final String NEWLY_ADDED_FILTER_QUERY = "New";
     private static final Color PASTEL_GREEN = new Color(0x7CB987);
     private static final Color PASTEL_ORANGE = new Color(0xD4A574);
 
@@ -233,6 +234,11 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
             Collections.addAll(keywords, manifest.getAuthors());
 
             Collections.addAll(keywords, manifest.getTags());
+
+            if (manifest.isNewlyAdded()) {
+                keywords.add("new");
+                keywords.add("newly added");
+            }
 
             setBackground(ColorScheme.DARKER_GRAY_COLOR);
             setOpaque(true);
@@ -705,6 +711,7 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
         searchBar.setIcon(IconTextField.Icon.SEARCH);
         searchBar.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         searchBar.setHoverBackgroundColor(ColorScheme.DARK_GRAY_HOVER_COLOR);
+        searchBar.getSuggestionListModel().addElement(NEWLY_ADDED_FILTER_QUERY);
         searchBar.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -731,7 +738,7 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
         refreshing.setHorizontalAlignment(JLabel.CENTER);
 
         JPanel mainPanelWrapper = new FixedWidthPanel();
-        JButton openFolderButton = new JButton("Open Plugins Folder");
+        JButton openFolderButton = new JButton("Open Folder");
         SwingUtil.removeButtonDecorations(openFolderButton);
         openFolderButton.setFocusable(false);
         openFolderButton.setToolTipText("Open " + MICROBOT_PLUGIN_DIR.getAbsolutePath());
@@ -909,12 +916,19 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
         }
 
         String query = searchBar.getText();
-        boolean isSearching = query != null && !query.trim().isEmpty();
+        String trimmedQuery = query == null ? "" : query.trim();
+        boolean onlyNew = isNewlyAddedFilterQuery(trimmedQuery);
+        String effectiveQuery = onlyNew ? "" : query;
+        boolean isSearching = effectiveQuery != null && !effectiveQuery.trim().isEmpty();
+        List<PluginItem> filteredPlugins = plugins.stream()
+                .filter(plugin -> !onlyNew || plugin.manifest.isNewlyAdded())
+                .collect(Collectors.toList());
+
         List<PluginItem> pluginItems;
         if (isSearching) {
-            pluginItems = MicrobotPluginSearch.search(plugins, query);
+            pluginItems = MicrobotPluginSearch.search(filteredPlugins, effectiveQuery);
         } else {
-            pluginItems = plugins.stream()
+            pluginItems = filteredPlugins.stream()
                     .sorted(Comparator.comparing(PluginItem::isInstalled)
                             .thenComparingInt(PluginItem::getUserCount)
                             .reversed()
@@ -929,6 +943,11 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
             pluginItems.forEach(mainPanel::add);
             mainPanel.revalidate();
         });
+    }
+
+    private boolean isNewlyAddedFilterQuery(String query) {
+        return NEWLY_ADDED_FILTER_QUERY.equalsIgnoreCase(query)
+                || "Newly Added".equalsIgnoreCase(query);
     }
 
     @Override
