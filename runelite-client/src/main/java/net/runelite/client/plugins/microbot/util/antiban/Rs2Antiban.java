@@ -287,9 +287,6 @@ public class Rs2Antiban {
     }
 
     private static void performActionCooldown() {
-        if (Rs2AntibanSettings.universalAntiban)
-			Microbot.pauseAllScripts.compareAndSet(false, true);
-
         if (Rs2AntibanSettings.nonLinearIntervals)
             playStyle.evolvePlayStyle();
 
@@ -297,6 +294,12 @@ public class Rs2Antiban {
             TIMEOUT = playStyle.getRandomTickInterval();
         else
             TIMEOUT = playStyle.getPrimaryTickInterval();
+
+        // The pause (universal antiban only) and the always-set active flag both happen only after
+        // TIMEOUT is computed: if computing the interval ever throws, scripts must not be left
+        // paused with no countdown to clear them.
+        if (Rs2AntibanSettings.universalAntiban)
+			Microbot.pauseAllScripts.compareAndSet(false, true);
 
         Rs2AntibanSettings.actionCooldownActive = true;
 
