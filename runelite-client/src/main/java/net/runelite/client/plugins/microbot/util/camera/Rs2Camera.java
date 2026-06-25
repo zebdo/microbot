@@ -307,19 +307,13 @@ public class Rs2Camera {
 
     private static void setCameraTargetOnClientThread(int target, boolean isPitch) {
         int clientTarget = toClientAngleUnits(target);
-        Runnable update = () -> {
+        Microbot.getClientThread().invoke(() -> {
             if (isPitch) {
                 Microbot.getClient().setCameraPitchTarget(clientTarget);
             } else {
                 Microbot.getClient().setCameraYawTarget(clientTarget);
             }
-        };
-
-        if (Microbot.getClient().isClientThread()) {
-            update.run();
-        } else {
-            Microbot.getClientThread().invokeLater(update);
-        }
+        });
     }
 
     static final int SMOOTH_MIN_DURATION_MS = 220;
@@ -337,7 +331,7 @@ public class Rs2Camera {
             clampedTarget = Math.max(0, Math.min(LEGACY_ANGLE_UNITS - 1, target));
         }
         int delta = shortestDelta(clampedTarget - start, isPitch);
-        if (Math.abs(delta) < 3 || Microbot.getClient().isClientThread()) {
+        if (Math.abs(delta) < 3 || Microbot.getClientThread().isClientThread()) {
             setCameraTargetOnClientThread(clampedTarget, isPitch);
             return;
         }
@@ -469,4 +463,3 @@ public class Rs2Camera {
         centerTileOnScreen(tile, 10.0);
     }
 }
-

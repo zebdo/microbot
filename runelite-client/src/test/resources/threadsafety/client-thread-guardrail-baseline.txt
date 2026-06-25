@@ -129,7 +129,6 @@ net.runelite.client.plugins.microbot.util.bank.Rs2Bank#withdrawLootItems(String,
 net.runelite.client.plugins.microbot.util.bank.Rs2Bank#withdrawLootItems(String, List): boolean  ->  net.runelite.api.ItemComposition#isTradeable(): boolean
 net.runelite.client.plugins.microbot.util.camera.Rs2Camera#getZoom(): int  ->  net.runelite.api.Client#getVarcIntValue(int): int
 net.runelite.client.plugins.microbot.util.camera.Rs2Camera#isTileOnScreen(LocalPoint): boolean  ->  net.runelite.api.Client#getPlane(): int
-net.runelite.client.plugins.microbot.util.camera.Rs2Camera#smoothTo(int, boolean): void  ->  net.runelite.api.Client#isClientThread(): boolean
 net.runelite.client.plugins.microbot.util.combat.Rs2Combat#getWeaponAttackStyle(): String  ->  net.runelite.api.EnumComposition#getIntValue(int): int
 net.runelite.client.plugins.microbot.util.combat.Rs2Combat#inCombat(): boolean  ->  net.runelite.api.Client#getLocalPlayer(): Player
 net.runelite.client.plugins.microbot.util.combat.Rs2Combat#setAttackStyle(WidgetInfo): boolean  ->  net.runelite.api.Client#getWidget(WidgetInfo): Widget
