@@ -69,7 +69,7 @@ public class Rs2GroundItem {
             int param1;
             int identifier;
             String target;
-            MenuAction menuAction = MenuAction.CANCEL;
+            MenuAction menuAction;
             ItemComposition item;
 
             item = Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getItemDefinition(groundItem.getId())).orElse(null);
@@ -90,24 +90,17 @@ public class Rs2GroundItem {
                 String groundAction = groundActions[i];
                 if (groundAction == null || !groundAction.equalsIgnoreCase(action)) continue;
                 index = i;
+                break;
             }
 
             if (Microbot.getClient().isWidgetSelected()) {
                 menuAction = MenuAction.WIDGET_TARGET_ON_GROUND_ITEM;
-            } else if (index == 0) {
-                menuAction = MenuAction.GROUND_ITEM_FIRST_OPTION;
-            } else if (index == 1) {
-                menuAction = MenuAction.GROUND_ITEM_SECOND_OPTION;
-            } else if (index == 2) {
-                menuAction = MenuAction.GROUND_ITEM_THIRD_OPTION;
-            } else if (index == 3) {
-                menuAction = MenuAction.GROUND_ITEM_FOURTH_OPTION;
-            } else if (index == 4) {
-                menuAction = MenuAction.GROUND_ITEM_FIFTH_OPTION;
-            }
-            if (menuAction == MenuAction.CANCEL) {
-                log.warn("Unable to interact with ground item '{}' using action '{}'; actions={}", groundItem.getName(), action, Arrays.toString(groundActions));
-                return false;
+            } else {
+                menuAction = groundItemMenuAction(index);
+                if (menuAction == null) {
+                    log.warn("Unable to interact with ground item '{}' using action '{}'; actions={}", groundItem.getName(), action, Arrays.toString(groundActions));
+                    return false;
+                }
             }
             LocalPoint localPoint1 = localPoint;
             if (!Rs2Camera.isTileOnScreen(localPoint1)) {
@@ -146,9 +139,19 @@ public class Rs2GroundItem {
                     (int) bounds.getCenterY());
             return true;
         } catch (Exception ex) {
-            Microbot.log(ex.getMessage());
-            ex.printStackTrace();
+            Microbot.logStackTrace("Rs2GroundItem", ex);
             return false;
+        }
+    }
+
+    private static MenuAction groundItemMenuAction(int index) {
+        switch (index) {
+            case 0: return MenuAction.GROUND_ITEM_FIRST_OPTION;
+            case 1: return MenuAction.GROUND_ITEM_SECOND_OPTION;
+            case 2: return MenuAction.GROUND_ITEM_THIRD_OPTION;
+            case 3: return MenuAction.GROUND_ITEM_FOURTH_OPTION;
+            case 4: return MenuAction.GROUND_ITEM_FIFTH_OPTION;
+            default: return null;
         }
     }
 
