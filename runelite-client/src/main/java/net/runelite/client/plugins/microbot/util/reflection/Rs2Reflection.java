@@ -14,8 +14,9 @@ import java.awt.event.KeyEvent;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -76,21 +77,27 @@ public class Rs2Reflection {
     private static volatile Field cachedListField;
     private static volatile Field cachedStringField;
 
-    @SneakyThrows
     public static String[] getGroundItemActions(ItemComposition item) {
+        return getGroundItemActionsFromObject(item);
+    }
+
+    @SneakyThrows
+    static String[] getGroundItemActionsFromObject(Object item) {
+        if (item == null) return new String[]{};
+
         if (cachedOuterField != null && cachedListField != null) {
             try {
                 return extractWithCache(item);
             } catch (Exception e) {
                 log.warn("Ground item action cache invalidated, re-discovering");
-                cachedOuterField = null;
-                cachedListField = null;
-                cachedStringField = null;
+                resetGroundItemActionCache();
             }
         }
 
         for (Class<?> clazz = item.getClass(); clazz != null && clazz != Object.class; clazz = clazz.getSuperclass()) {
             for (Field outerField : clazz.getDeclaredFields()) {
+                if (Modifier.isStatic(outerField.getModifiers()) || outerField.isSynthetic()) continue;
+
                 Class<?> type = outerField.getType();
                 if (type.isPrimitive() || type == String.class || type.isArray()
                         || type.getName().startsWith("java.") || type.getName().startsWith("net.runelite.")) continue;
@@ -101,14 +108,15 @@ public class Rs2Reflection {
                 if (outerValue == null) continue;
 
                 for (Field listField : outerValue.getClass().getDeclaredFields()) {
-                    if (listField.getType() != ArrayList.class) continue;
+                    if (Modifier.isStatic(listField.getModifiers()) || listField.isSynthetic()) continue;
+                    if (!List.class.isAssignableFrom(listField.getType())) continue;
 
                     listField.setAccessible(true);
                     Object listObj = listField.get(outerValue);
                     listField.setAccessible(false);
-                    if (!(listObj instanceof ArrayList)) continue;
+                    if (!(listObj instanceof List)) continue;
 
-                    ArrayList<?> list = (ArrayList<?>) listObj;
+                    List<?> list = (List<?>) listObj;
                     if (list.isEmpty()) continue;
 
                     Object first = null;
@@ -121,27 +129,36 @@ public class Rs2Reflection {
                         cachedOuterField = outerField;
                         cachedListField = listField;
                         cachedStringField = null;
-                        return groundItemActionsOrDefault(toStringArray(list));
+                        return toStringArray(list);
                     }
 
                     Field stringField = null;
                     for (Field f : first.getClass().getDeclaredFields()) {
-                        if (f.getType() == String.class) { stringField = f; break; }
+                        if (!Modifier.isStatic(f.getModifiers()) && !f.isSynthetic() && f.getType() == String.class) {
+                            stringField = f;
+                            break;
+                        }
                     }
                     if (stringField == null) continue;
 
                     cachedOuterField = outerField;
                     cachedListField = listField;
                     cachedStringField = stringField;
-                    return groundItemActionsOrDefault(extractFromBeans(list, stringField));
+                    return extractFromBeans(list, stringField);
                 }
             }
         }
 
-        return defaultGroundItemActions();
+        return new String[]{};
     }
 
-    private static String[] extractWithCache(ItemComposition item) throws Exception {
+    static void resetGroundItemActionCache() {
+        cachedOuterField = null;
+        cachedListField = null;
+        cachedStringField = null;
+    }
+
+    private static String[] extractWithCache(Object item) throws Exception {
         cachedOuterField.setAccessible(true);
         Object outer = cachedOuterField.get(item);
         cachedOuterField.setAccessible(false);
@@ -150,29 +167,14 @@ public class Rs2Reflection {
         cachedListField.setAccessible(true);
         Object listObj = cachedListField.get(outer);
         cachedListField.setAccessible(false);
-        if (!(listObj instanceof ArrayList)) return new String[]{};
+        if (!(listObj instanceof List)) return new String[]{};
 
-        ArrayList<?> list = (ArrayList<?>) listObj;
-        if (cachedStringField == null) return groundItemActionsOrDefault(toStringArray(list));
-        return groundItemActionsOrDefault(extractFromBeans(list, cachedStringField));
+        List<?> list = (List<?>) listObj;
+        if (cachedStringField == null) return toStringArray(list);
+        return extractFromBeans(list, cachedStringField);
     }
 
-    private static String[] groundItemActionsOrDefault(String[] actions) {
-        if (actions != null) {
-            for (String action : actions) {
-                if (action != null && !action.isBlank()) {
-                    return actions;
-                }
-            }
-        }
-        return defaultGroundItemActions();
-    }
-
-    private static String[] defaultGroundItemActions() {
-        return new String[]{null, null, "Take", null, null};
-    }
-
-    private static String[] toStringArray(ArrayList<?> list) {
+    private static String[] toStringArray(List<?> list) {
         String[] result = new String[list.size()];
         for (int i = 0; i < list.size(); i++) {
             Object el = list.get(i);
@@ -181,7 +183,7 @@ public class Rs2Reflection {
         return result;
     }
 
-    private static String[] extractFromBeans(ArrayList<?> list, Field stringField) throws Exception {
+    private static String[] extractFromBeans(List<?> list, Field stringField) throws Exception {
         String[] result = new String[list.size()];
         stringField.setAccessible(true);
         for (int i = 0; i < list.size(); i++) {
