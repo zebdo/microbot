@@ -76,6 +76,7 @@ public class Rs2Reflection {
     private static volatile Field cachedOuterField;
     private static volatile Field cachedListField;
     private static volatile Field cachedStringField;
+    private static volatile Class<?> cachedGroundItemClass;
 
     public static String[] getGroundItemActions(ItemComposition item) {
         return getGroundItemActionsFromObject(item);
@@ -84,6 +85,11 @@ public class Rs2Reflection {
     @SneakyThrows
     static String[] getGroundItemActionsFromObject(Object item) {
         if (item == null) return new String[]{};
+        Class<?> itemClass = item.getClass();
+        if (cachedGroundItemClass != itemClass) {
+            resetGroundItemActionCache();
+            cachedGroundItemClass = itemClass;
+        }
 
         if (cachedOuterField != null && cachedListField != null) {
             try {
@@ -153,6 +159,7 @@ public class Rs2Reflection {
     }
 
     static void resetGroundItemActionCache() {
+        cachedGroundItemClass = null;
         cachedOuterField = null;
         cachedListField = null;
         cachedStringField = null;
