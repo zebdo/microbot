@@ -287,13 +287,13 @@ public class Rs2Camera {
     // West = 512
 
     public static void setYaw(int yaw) {
-        if (yaw < 0 || yaw >= LEGACY_ANGLE_UNITS) return;
-        smoothTo(yaw, false);
+        if (yaw < 0 || yaw > LEGACY_ANGLE_UNITS) return;
+        smoothTo(yaw % LEGACY_ANGLE_UNITS, false);
     }
 
     public static void setYawInstant(int yaw) {
-        if (yaw >= 0 && yaw < LEGACY_ANGLE_UNITS) {
-            setCameraTargetOnClientThread(yaw, false);
+        if (yaw >= 0 && yaw <= LEGACY_ANGLE_UNITS) {
+            setCameraTargetOnClientThread(yaw % LEGACY_ANGLE_UNITS, false);
         }
     }
 
