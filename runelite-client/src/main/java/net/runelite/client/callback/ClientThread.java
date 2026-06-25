@@ -59,6 +59,11 @@ public class ClientThread
 		});
 	}
 
+	public boolean isClientThread()
+	{
+		return client.isClientThread();
+	}
+
 	/**
 	 * Run a method on the client thread, returning an optional of the result.
 	 * @param method

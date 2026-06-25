@@ -28,7 +28,6 @@ import lombok.Getter;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.config.SearchablePlugin;
 import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.SwingUtil;
 import org.jetbrains.annotations.NotNull;
@@ -91,7 +90,7 @@ class MicrobotPluginListItem extends JPanel implements SearchablePlugin
 		}
 
 		setLayout(new BorderLayout(3, 0));
-		setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH, 20));
+		setPreferredSize(new Dimension(MicrobotPluginListPanel.LIST_ITEM_WIDTH, 20));
 
 		JLabel nameLabel = createNameLabel(pluginConfig);
 
@@ -188,7 +187,7 @@ class MicrobotPluginListItem extends JPanel implements SearchablePlugin
 	private static JLabel createNameLabel(MicrobotPluginConfigurationDescriptor pluginConfig) {
 		JLabel nameLabel = new JLabel(pluginConfig.getName());
 		int buttons = 21 /*pin*/ + 25 /*config, if present*/ + 34 /*toggle approx*/ + 12 /*margins*/;
-		int textWidth = PluginPanel.PANEL_WIDTH - buttons;
+		int textWidth = MicrobotPluginListPanel.LIST_ITEM_WIDTH - buttons;
 		nameLabel.setText("<html><div style='width:" + textWidth + "px'>" + pluginConfig.getName() + "</div></html>");
 		nameLabel.setForeground(Color.WHITE);
 

@@ -31,10 +31,22 @@ import java.awt.*;
 
 class MicrobotFixedWidthPanel extends JPanel
 {
+	private final int preferredWidth;
+
+	MicrobotFixedWidthPanel()
+	{
+		this(PluginPanel.PANEL_WIDTH);
+	}
+
+	MicrobotFixedWidthPanel(int preferredWidth)
+	{
+		this.preferredWidth = preferredWidth;
+	}
+
 	@Override
 	public Dimension getPreferredSize()
 	{
-		return new Dimension(PluginPanel.PANEL_WIDTH, super.getPreferredSize().height);
+		return new Dimension(preferredWidth, super.getPreferredSize().height);
 	}
 
 }

@@ -162,6 +162,9 @@ public class MicrobotPluginManager {
             for (MicrobotPluginManifest m : manifests) {
                 next.put(m.getInternalName(), m);
                 if (allReleases != null) {
+                    microbotPluginClient.findFirstAssetCreatedAt(m, allReleases)
+                            .ifPresent(m::setAddedAt);
+
                     try {
                         List<String> versions = microbotPluginClient.parseVersionsFromReleases(m, allReleases);
                         m.setAvailableVersions(versions);
