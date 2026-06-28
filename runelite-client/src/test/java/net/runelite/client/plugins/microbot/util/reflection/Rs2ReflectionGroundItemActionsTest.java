@@ -43,4 +43,28 @@ public class Rs2ReflectionGroundItemActionsTest {
 
         assertArrayEquals(new String[]{"Take", "Destroy"}, actions);
     }
+
+    @Test
+    public void fallbackReturnsTakeWhenNoGroundActionStructureExists() {
+        String[] actions = Rs2Reflection.getGroundItemActionsFromObject(
+                GroundItemActionFixture.createWithoutGroundActions());
+
+        assertArrayEquals(new String[]{null, null, "Take", null, null}, actions);
+    }
+
+    @Test
+    public void fallbackReturnsTakeWhenGroundActionsAreEmpty() {
+        String[] actions = Rs2Reflection.getGroundItemActionsFromObject(
+                GroundItemActionFixture.create());
+
+        assertArrayEquals(new String[]{null, null, "Take", null, null}, actions);
+    }
+
+    @Test
+    public void fallbackReturnsTakeWhenGroundActionsAreNullOrBlank() {
+        String[] actions = Rs2Reflection.getGroundItemActionsFromObject(
+                GroundItemActionFixture.create(null, "", "   "));
+
+        assertArrayEquals(new String[]{null, null, "Take", null, null}, actions);
+    }
 }

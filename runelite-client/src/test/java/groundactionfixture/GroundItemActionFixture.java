@@ -17,6 +17,14 @@ public final class GroundItemActionFixture {
         return new FakeListItem(actions);
     }
 
+    public static Object createWithoutGroundActions() {
+        return new FakeItemWithoutGroundActions();
+    }
+
+    private static final class FakeItemWithoutGroundActions {
+        private final String name = "Amethyst";
+    }
+
     private static final class FakeItem {
         private static final MisleadingOuter STATIC_OUTER = new MisleadingOuter();
         private final GroundOps groundOps;
