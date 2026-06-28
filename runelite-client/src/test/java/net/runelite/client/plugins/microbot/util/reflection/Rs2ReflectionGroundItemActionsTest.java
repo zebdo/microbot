@@ -67,4 +67,25 @@ public class Rs2ReflectionGroundItemActionsTest {
 
         assertArrayEquals(new String[]{null, null, "Take", null, null}, actions);
     }
+
+    @Test
+    public void cachedPathFallsBackWhenOuterFieldBecomesNull() {
+        Rs2Reflection.getGroundItemActionsFromObject(GroundItemActionFixture.create("Take"));
+
+        String[] actions = Rs2Reflection.getGroundItemActionsFromObject(
+                GroundItemActionFixture.createWithNullGroundOps());
+
+        assertArrayEquals(new String[]{null, null, "Take", null, null}, actions);
+    }
+
+    @Test
+    public void cachedPathFallsBackWhenCachedActionFieldIsNotAList() {
+        Rs2Reflection.getGroundItemActionsFromObject(
+                GroundItemActionFixture.createWithFlexibleActions("Take"));
+
+        String[] actions = Rs2Reflection.getGroundItemActionsFromObject(
+                GroundItemActionFixture.createWithInvalidFlexibleActions());
+
+        assertArrayEquals(new String[]{null, null, "Take", null, null}, actions);
+    }
 }

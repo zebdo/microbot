@@ -169,12 +169,12 @@ public class Rs2Reflection {
         cachedOuterField.setAccessible(true);
         Object outer = cachedOuterField.get(item);
         cachedOuterField.setAccessible(false);
-        if (outer == null) return new String[]{};
+        if (outer == null) return defaultGroundItemActions();
 
         cachedListField.setAccessible(true);
         Object listObj = cachedListField.get(outer);
         cachedListField.setAccessible(false);
-        if (!(listObj instanceof List)) return new String[]{};
+        if (!(listObj instanceof List)) return defaultGroundItemActions();
 
         List<?> list = (List<?>) listObj;
         if (cachedStringField == null) return groundItemActionsOrDefault(toStringArray(list));
