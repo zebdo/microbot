@@ -20,25 +20,36 @@ public class GroundItemInteractionDispatchTest
     @Test
     public void legacyGroundItemUsesSyntheticTargetMenu() throws IOException
     {
-        assertSyntheticTargetMenuDispatch(Rs2GroundItem.class);
+        assertSyntheticTargetMenuDispatch(
+                Rs2GroundItem.class,
+                "interact",
+                Type.getMethodDescriptor(Type.BOOLEAN_TYPE,
+                        Type.getType(InteractModel.class), Type.getType(String.class)));
     }
 
     @Test
     public void tileItemUsesSyntheticTargetMenu() throws IOException
     {
-        assertSyntheticTargetMenuDispatch(Rs2TileItemModel.class);
+        assertSyntheticTargetMenuDispatch(
+                Rs2TileItemModel.class,
+                "click",
+                Type.getMethodDescriptor(Type.BOOLEAN_TYPE, Type.getType(String.class)));
     }
 
-    private static void assertSyntheticTargetMenuDispatch(Class<?> type) throws IOException
+    private static void assertSyntheticTargetMenuDispatch(Class<?> type, String methodName,
+                                                          String methodDescriptor) throws IOException
     {
-        DispatchCalls calls = readDispatchCalls(type);
+        DispatchCalls calls = readDispatchCalls(type, methodName, methodDescriptor);
 
+        assertEquals(type.getSimpleName() + " must contain the expected interaction method",
+                1, calls.matchedMethods);
         assertTrue(type.getSimpleName() + " must dispatch through Microbot.doInvoke", calls.doInvoke > 0);
         assertEquals(type.getSimpleName() + " must not dispatch through Rs2Reflection.invokeMenu",
                 0, calls.reflectionInvokeMenu);
     }
 
-    private static DispatchCalls readDispatchCalls(Class<?> type) throws IOException
+    private static DispatchCalls readDispatchCalls(Class<?> type, String expectedName,
+                                                   String expectedDescriptor) throws IOException
     {
         String resource = "/" + Type.getInternalName(type) + ".class";
         DispatchCalls calls = new DispatchCalls();
@@ -55,6 +66,11 @@ public class GroundItemInteractionDispatchTest
                 public MethodVisitor visitMethod(int access, String name, String descriptor,
                                                  String signature, String[] exceptions)
                 {
+                    if (!name.equals(expectedName) || !descriptor.equals(expectedDescriptor))
+                    {
+                        return null;
+                    }
+                    calls.matchedMethods++;
                     return new MethodVisitor(Opcodes.ASM9)
                     {
                         @Override
@@ -79,6 +95,7 @@ public class GroundItemInteractionDispatchTest
 
     private static final class DispatchCalls
     {
+        private int matchedMethods;
         private int doInvoke;
         private int reflectionInvokeMenu;
     }
