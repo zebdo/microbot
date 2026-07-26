@@ -49,6 +49,7 @@ public class Pathfinder implements Runnable {
     private final PathfinderConfig config;
     private final CollisionMap map;
     private final boolean targetInWilderness;
+    private final boolean targetInAlwaysBlockedLeagueRegion;
 
     // Walking subgraph uses A* (boundary is a PQ keyed on f = g + Chebyshev heuristic),
     // so among walking nodes the search picks the most promising direction first.
@@ -77,12 +78,16 @@ public class Pathfinder implements Runnable {
     private final VisitedTiles visited;
 
     private volatile List<WorldPoint> path = Collections.emptyList();
+    private volatile List<RouteStep> routeSteps = Collections.emptyList();
+    private volatile Node routeLastNode;
     private volatile List<WorldPoint> smoothedPath = Collections.emptyList();
     private volatile boolean pathNeedsUpdate = false;
     private volatile boolean smoothed = false;
     private volatile Node bestLastNode;
     /** When set, {@link #getPath()} returns this list (bidirectional join or early exact hit). */
     private volatile List<WorldPoint> joinedPath;
+    /** Exact transport identities for {@link #joinedPath}. */
+    private volatile List<RouteStep> joinedRouteSteps;
     /**
      * Teleportation transports are updated when this changes.
      * Can be either:
@@ -106,6 +111,8 @@ public class Pathfinder implements Runnable {
         }
         visited = new VisitedTiles(map);
         targetInWilderness = PathfinderConfig.isInWildernessPackedPoint(targets);
+        targetInAlwaysBlockedLeagueRegion = Arrays.stream(targetsPacked)
+                .anyMatch(config::isInAlwaysBlockedLeagueRegion);
         wildernessLevel = 31;
         WebWalkLog.pf("created src={} dst={} config={}",
                 WorldPointUtil.toString(this.start),
@@ -163,6 +170,77 @@ public class Pathfinder implements Runnable {
     }
 
     /**
+     * Returns the raw route with the exact transport selected for every non-walking
+     * edge. The returned objects are immutable snapshots.
+     */
+    public List<RouteStep> getRouteSteps() {
+        List<RouteStep> joined = joinedRouteSteps;
+        if (joined != null) {
+            return joined;
+        }
+        Node lastNode = bestLastNode;
+        if (lastNode == null) {
+            return routeSteps;
+        }
+        if (routeLastNode != lastNode) {
+            routeSteps = buildForwardRouteSteps(lastNode);
+            routeLastNode = lastNode;
+        }
+        return routeSteps;
+    }
+
+    /**
+     * Finds the exact selected transport for a raw path edge.
+     */
+    public Transport getTransportForEdge(WorldPoint from, WorldPoint to) {
+        if (from == null || to == null) {
+            return null;
+        }
+        List<RouteStep> steps = getRouteSteps();
+        for (int i = 1; i < steps.size(); i++) {
+            if (from.equals(steps.get(i - 1).getPosition())
+                    && to.equals(steps.get(i).getPosition())) {
+                return steps.get(i).getTransportFromPrevious();
+            }
+        }
+        return null;
+    }
+
+    public List<Transport> getSelectedTransports() {
+        return getSelectedTransports(0);
+    }
+
+    public List<Transport> getSelectedTransports(int startPathIndex) {
+        List<Transport> selected = new ArrayList<>();
+        List<RouteStep> steps = getRouteSteps();
+        for (int i = Math.max(0, startPathIndex); i < steps.size(); i++) {
+            RouteStep step = steps.get(i);
+            if (step.getTransportFromPrevious() != null) {
+                selected.add(step.getTransportFromPrevious());
+            }
+        }
+        return Collections.unmodifiableList(selected);
+    }
+
+    static List<RouteStep> buildForwardRouteSteps(Node lastNode) {
+        List<Node> nodes = new ArrayList<>();
+        for (Node node = lastNode; node != null; node = node.previous) {
+            nodes.add(node);
+        }
+        Collections.reverse(nodes);
+
+        List<RouteStep> steps = new ArrayList<>(nodes.size());
+        for (Node node : nodes) {
+            Transport transport = null;
+            if (node instanceof TransportNode && !((TransportNode) node).isReverse()) {
+                transport = ((TransportNode) node).getTransport();
+            }
+            steps.add(new RouteStep(WorldPointUtil.unpackWorldPoint(node.packedPosition), transport));
+        }
+        return Collections.unmodifiableList(steps);
+    }
+
+    /**
      * Smoothed view of {@link #getPath()} for walker consumption. Collapses
      * straight-line runs of adjacent tiles using line-of-sight checks so that
      * the walker's main loop iterates fewer waypoints and issues fewer
@@ -208,6 +286,14 @@ public class Pathfinder implements Runnable {
         boolean afterTransport = node instanceof TransportNode;
         for (Node neighbor : nodes) {
             if (config.avoidWilderness(node.packedPosition, neighbor.packedPosition, targetInWilderness)) {
+                continue;
+            }
+            if (!(node instanceof TransportNode)
+                    && !(neighbor instanceof TransportNode)
+                    && config.avoidAlwaysBlockedLeagueRegion(
+                            node.packedPosition,
+                            neighbor.packedPosition,
+                            targetInAlwaysBlockedLeagueRegion)) {
                 continue;
             }
 
@@ -434,14 +520,28 @@ public class Pathfinder implements Runnable {
         }
     }
 
-    private List<WorldPoint> combineBidirectionalPath(Node forwardAtMeet, Node backwardAtMeet) {
-        List<WorldPoint> head = forwardAtMeet.getPath();
-        List<WorldPoint> full = new ArrayList<>(head.size() + 64);
+    static List<RouteStep> combineBidirectionalRoute(Node forwardAtMeet, Node backwardAtMeet) {
+        List<RouteStep> head = buildForwardRouteSteps(forwardAtMeet);
+        List<RouteStep> full = new ArrayList<>(head.size() + 64);
         full.addAll(head);
-        for (Node n = backwardAtMeet.previous; n != null; n = n.previous) {
-            full.add(WorldPointUtil.unpackWorldPoint(n.packedPosition));
+        for (Node cursor = backwardAtMeet; cursor != null && cursor.previous != null; cursor = cursor.previous) {
+            Transport transport = cursor instanceof TransportNode && ((TransportNode) cursor).isReverse()
+                    ? ((TransportNode) cursor).getTransport()
+                    : null;
+            full.add(new RouteStep(
+                    WorldPointUtil.unpackWorldPoint(cursor.previous.packedPosition),
+                    transport));
         }
-        return full;
+        return Collections.unmodifiableList(full);
+    }
+
+    private void setJoinedRoute(List<RouteStep> steps) {
+        joinedRouteSteps = steps;
+        List<WorldPoint> points = new ArrayList<>(steps.size());
+        for (RouteStep step : steps) {
+            points.add(step.getPosition());
+        }
+        joinedPath = Collections.unmodifiableList(points);
     }
 
     private void addNeighborsForwardWithMeet(Node node, Map<Integer, Node> forwardAt, Map<Integer, Node> backwardAt,
@@ -450,6 +550,14 @@ public class Pathfinder implements Runnable {
         boolean afterTransport = node instanceof TransportNode;
         for (Node neighbor : nodes) {
             if (config.avoidWilderness(node.packedPosition, neighbor.packedPosition, targetInWilderness)) {
+                continue;
+            }
+            if (!(node instanceof TransportNode)
+                    && !(neighbor instanceof TransportNode)
+                    && config.avoidAlwaysBlockedLeagueRegion(
+                            node.packedPosition,
+                            neighbor.packedPosition,
+                            targetInAlwaysBlockedLeagueRegion)) {
                 continue;
             }
 
@@ -477,6 +585,14 @@ public class Pathfinder implements Runnable {
         boolean afterTransport = node instanceof TransportNode;
         for (Node pred : nodes) {
             if (config.avoidWilderness(pred.packedPosition, node.packedPosition, targetInWilderness)) {
+                continue;
+            }
+            if (!(pred instanceof TransportNode)
+                    && !(node instanceof TransportNode)
+                    && config.avoidAlwaysBlockedLeagueRegion(
+                            pred.packedPosition,
+                            node.packedPosition,
+                            targetInAlwaysBlockedLeagueRegion)) {
                 continue;
             }
 
@@ -655,7 +771,7 @@ public class Pathfinder implements Runnable {
 
                 final int nodePos = node.packedPosition;
                 if (nodePos == goalPacked) {
-                    joinedPath = node.getPath();
+                    setJoinedRoute(buildForwardRouteSteps(node));
                     pathNeedsUpdate = false;
                     bestLastNode = null;
                     WebWalkLog.pf("bidir forward_hit_goal");
@@ -692,7 +808,7 @@ public class Pathfinder implements Runnable {
                 }
 
                 if (node.packedPosition == start) {
-                    joinedPath = combineBidirectionalPath(forwardAt.get(start), node);
+                    setJoinedRoute(combineBidirectionalRoute(forwardAt.get(start), node));
                     pathNeedsUpdate = false;
                     bestLastNode = null;
                     WebWalkLog.pf("bidir backward_hit_start");
@@ -709,7 +825,7 @@ public class Pathfinder implements Runnable {
         }
 
         if (joinedPath == null && meetF[0] != null && meetB[0] != null && bestMeetingCost[0] < Long.MAX_VALUE) {
-            joinedPath = combineBidirectionalPath(meetF[0], meetB[0]);
+            setJoinedRoute(combineBidirectionalRoute(meetF[0], meetB[0]));
             pathNeedsUpdate = false;
             bestLastNode = null;
             WebWalkLog.pf("bidir meet_at={} cost={}",
@@ -735,6 +851,7 @@ public class Pathfinder implements Runnable {
         WebWalkLog.pf("run_start src={} dst={} cutoffMs={}",
                 WorldPointUtil.toString(start), WorldPointUtil.toString(targets), config.getCalculationCutoffMillis());
         joinedPath = null;
+        joinedRouteSteps = null;
         try {
             stats.start();
             computeNetworkLandmarks();

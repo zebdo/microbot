@@ -3,6 +3,8 @@ package net.runelite.client.plugins.microbot.util.leaguetransport;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.shortestpath.Transport;
 import net.runelite.client.plugins.microbot.shortestpath.TransportType;
+import net.runelite.client.plugins.microbot.shortestpath.leagues.PinnedLeagueRegion;
+import net.runelite.client.plugins.microbot.shortestpath.leagues.PinnedLeagueRegionMap;
 import net.runelite.client.plugins.microbot.shortestpath.WorldPointUtil;
 import net.runelite.client.plugins.microbot.shortestpath.pathfinder.PathfinderConfig;
 import net.runelite.client.plugins.microbot.util.walker.WebWalkLog;
@@ -218,6 +220,19 @@ final class LeaguesTransportInjection
 		{
 			return true;
 		}
+		if (!isPinnedRegionAllowed(ctx, PinnedLeagueRegionMap.getRegion(transport.getOrigin())))
+		{
+			return false;
+		}
+		PinnedLeagueRegion destinationRegion = PinnedLeagueRegionMap.parseOverride(transport.getRegionOverride());
+		if (destinationRegion == null)
+		{
+			destinationRegion = PinnedLeagueRegionMap.getRegion(transport.getDestination());
+		}
+		if (!isPinnedRegionAllowed(ctx, destinationRegion))
+		{
+			return false;
+		}
 		WorldPoint dest = transport.getDestination();
 		if (dest == null)
 		{
@@ -230,5 +245,20 @@ final class LeaguesTransportInjection
 		}
 		LeaguesRegion learned = LeaguesTransportPersistence.getBlacklistedDestinationRegionsSnapshot().get(packed);
 		return learned == null || ctx.getUnlockedRegions().contains(learned);
+	}
+
+	private static boolean isPinnedRegionAllowed(
+			Rs2LeaguesTransport.LeaguesContext ctx,
+			PinnedLeagueRegion region)
+	{
+		if (region == null || region.isAlwaysAllowed())
+		{
+			return true;
+		}
+		if (region.isAlwaysBlocked())
+		{
+			return false;
+		}
+		return ctx.getUnlockedRegions().contains(region.getLocalRegion());
 	}
 }

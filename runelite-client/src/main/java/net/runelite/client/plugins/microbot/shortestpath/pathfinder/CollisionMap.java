@@ -213,15 +213,21 @@ public class CollisionMap {
                     if (isMoa) moaIgnored++;
                     continue;
                 }
-                int cost = config.getDistanceBeforeUsingTeleport() + transport.getDuration();
-                neighbors.add(new TransportNode(transport.getDestination(), node, cost));
+                int cost = config.getDistanceBeforeUsingTeleport()
+                        + transport.getDuration()
+                        + config.getTransportCost(transport);
+                neighbors.add(new TransportNode(transport.getDestination(), node, cost, transport));
                 if (isMoa) {
                     moaAddedHere++;
                     if (moaCosts == null) moaCosts = new ArrayList<>();
                     moaCosts.add(cost);
                 }
             } else {
-                neighbors.add(new TransportNode(transport.getDestination(), node, transport.getDuration()));
+                neighbors.add(new TransportNode(
+                        transport.getDestination(),
+                        node,
+                        transport.getDuration() + config.getTransportCost(transport),
+                        transport));
             }
             //END microbot variables
         }
@@ -321,9 +327,19 @@ public class CollisionMap {
                     if (config.isIgnoreTeleportAndItems()) {
                         continue;
                     }
-                    neighbors.add(new TransportNode(origin, node, config.getDistanceBeforeUsingTeleport() + transport.getDuration()));
+                    neighbors.add(new TransportNode(origin, node,
+                            config.getDistanceBeforeUsingTeleport()
+                                    + transport.getDuration()
+                                    + config.getTransportCost(transport),
+                            transport,
+                            true));
                 } else {
-                    neighbors.add(new TransportNode(origin, node, transport.getDuration()));
+                    neighbors.add(new TransportNode(
+                            origin,
+                            node,
+                            transport.getDuration() + config.getTransportCost(transport),
+                            transport,
+                            true));
                 }
             }
         }

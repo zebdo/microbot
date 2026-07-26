@@ -11,6 +11,7 @@ import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.shortestpath.Transport;
 import net.runelite.client.plugins.microbot.shortestpath.TransportType;
+import net.runelite.client.plugins.microbot.shortestpath.transport.requirement.ItemRequirement;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
@@ -53,7 +54,7 @@ public final class Rs2WalkerBankingPlanner {
                 return new ArrayList<>();
             }
 
-            List<Transport> transports = Rs2Walker.getTransportsForPath(path, 0, prefTransportType, true);
+            List<Transport> transports = pf.getSelectedTransports();
             transports.forEach(t -> log.debug("Transport found: " + t));
             return transports;
         } finally {
@@ -73,26 +74,36 @@ public final class Rs2WalkerBankingPlanner {
                     || Rs2Inventory.hasItem(ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)
                     || Rs2Equipment.isWearing(ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)
                     || Microbot.getVarbitValue(VarbitID.LUMBRIDGE_DIARY_ELITE_COMPLETE) == 1;
-        } else if (transport.getType() == TransportType.TELEPORTATION_ITEM
-                || transport.getType() == TransportType.TELEPORTATION_SPELL
+        }
+
+        if ("TELEPORTATION_SPELL_HOME".equals(transport.getCatalogType())) {
+            return true;
+        }
+
+        if (transport.getCanonicalItemRequirements() != null) {
+            return transport.getCanonicalItemRequirements().getRequirements().stream()
+                    .allMatch(Rs2WalkerBankingPlanner::hasCanonicalRequirementOnPlayer);
+        }
+
+        if (transport.getType() == TransportType.TELEPORTATION_SPELL && transport.getDisplayInfo() != null) {
+            String spellName = transport.getDisplayInfo().contains(":")
+                    ? transport.getDisplayInfo().split(":")[0].trim()
+                    : transport.getDisplayInfo().trim();
+            String displayInfo = transport.getDisplayInfo().contains(":")
+                    ? spellName.toLowerCase()
+                    : transport.getDisplayInfo();
+            log.debug("Looking for spell rune requirements for: '{}' - display info {}", spellName, displayInfo);
+            Rs2Spells rs2Spell = Rs2Magic.getRs2Spell(displayInfo);
+            return Rs2Magic.hasRequiredRunes(rs2Spell);
+        }
+
+        if (transport.getType() == TransportType.TELEPORTATION_ITEM
                 || transport.getType() == TransportType.CANOE
                 || transport.getType() == TransportType.BOAT
                 || transport.getType() == TransportType.CHARTER_SHIP
                 || transport.getType() == TransportType.SHIP
                 || transport.getType() == TransportType.MINECART
                 || transport.getType() == TransportType.MAGIC_CARPET) {
-            if (transport.getType() == TransportType.TELEPORTATION_SPELL && transport.getDisplayInfo() != null) {
-                String spellName = transport.getDisplayInfo().contains(":")
-                        ? transport.getDisplayInfo().split(":")[0].trim()
-                        : transport.getDisplayInfo().trim();
-                boolean hasMultipleDestination = transport.getDisplayInfo().contains(":");
-                String displayInfo = hasMultipleDestination
-                        ? transport.getDisplayInfo().split(":")[0].trim().toLowerCase()
-                        : transport.getDisplayInfo();
-                log.debug("Looking for spell rune requirements for: '{}' - display info {}", spellName, displayInfo);
-                Rs2Spells rs2Spell = Rs2Magic.getRs2Spell(displayInfo);
-                return Rs2Magic.hasRequiredRunes(rs2Spell);
-            }
             if (isCurrencyBasedTransport(transport.getType())
                     && (transport.getItemIdRequirements() == null || transport.getItemIdRequirements().isEmpty())
                     && transport.getCurrencyName() != null
@@ -132,6 +143,15 @@ public final class Rs2WalkerBankingPlanner {
         Map<Integer, Integer> itemQuantityMap = new HashMap<>();
 
         transports.forEach(transport -> {
+            if ("TELEPORTATION_SPELL_HOME".equals(transport.getCatalogType())) {
+                return;
+            }
+
+            if (transport.getCanonicalItemRequirements() != null) {
+                addCanonicalMissingItems(transport, itemQuantityMap);
+                return;
+            }
+
             if (transport.getType() == TransportType.TELEPORTATION_SPELL) {
                 Map<Integer, Integer> spellRuneRequirements = getSpellRuneRequirements(transport);
                 if (!spellRuneRequirements.isEmpty()) {
@@ -183,6 +203,68 @@ public final class Rs2WalkerBankingPlanner {
         });
 
         return itemQuantityMap;
+    }
+
+    private static boolean hasCanonicalRequirementOnPlayer(ItemRequirement requirement) {
+        int requiredQuantity = Math.max(1, requirement.getQuantity());
+        for (int itemId : requirement.getItemIds()) {
+            if (Rs2Inventory.count(itemId) >= requiredQuantity) {
+                return true;
+            }
+        }
+        for (int staffId : requirement.getStaffIds()) {
+            if (Rs2Equipment.isWearing(staffId) || Rs2Inventory.hasItem(staffId)) {
+                return true;
+            }
+        }
+        for (int offhandId : requirement.getOffhandIds()) {
+            if (Rs2Equipment.isWearing(offhandId) || Rs2Inventory.hasItem(offhandId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void addCanonicalMissingItems(Transport transport, Map<Integer, Integer> itemQuantityMap) {
+        for (ItemRequirement requirement : transport.getCanonicalItemRequirements().getRequirements()) {
+            if (hasCanonicalRequirementOnPlayer(requirement)) {
+                continue;
+            }
+
+            int requiredQuantity = Math.max(1, requirement.getQuantity());
+            Integer preferredItemId = preferredBankAlternative(requirement.getItemIds(), requiredQuantity);
+            int withdrawalQuantity = requiredQuantity;
+            if (preferredItemId == null) {
+                preferredItemId = preferredBankAlternative(requirement.getStaffIds(), 1);
+                withdrawalQuantity = 1;
+            }
+            if (preferredItemId == null) {
+                preferredItemId = preferredBankAlternative(requirement.getOffhandIds(), 1);
+                withdrawalQuantity = 1;
+            }
+            if (preferredItemId != null) {
+                itemQuantityMap.merge(preferredItemId, withdrawalQuantity, Integer::sum);
+            }
+        }
+    }
+
+    private static Integer preferredBankAlternative(int[] itemIds, int requiredQuantity) {
+        Integer preferredItemId = null;
+        int preferredQuantity = -1;
+        for (int itemId : itemIds) {
+            int bankQuantity;
+            try {
+                bankQuantity = Rs2Bank.count(itemId);
+            } catch (Exception e) {
+                log.debug("Could not check bank for item {}: {}", itemId, e.getMessage());
+                continue;
+            }
+            if (bankQuantity >= requiredQuantity && bankQuantity > preferredQuantity) {
+                preferredItemId = itemId;
+                preferredQuantity = bankQuantity;
+            }
+        }
+        return preferredItemId;
     }
 
     public static List<Integer> getMissingTransportItemIds(List<Transport> transports) {

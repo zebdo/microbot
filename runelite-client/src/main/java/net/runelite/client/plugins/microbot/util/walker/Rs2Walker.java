@@ -3085,6 +3085,15 @@ public class Rs2Walker {
      * @return A list of Transport objects found along the path, sorted by transport type priority
      */
     public static List<Transport> getTransportsForPath(List<WorldPoint> path, int indexOfStartPoint, TransportType prefTransportType, boolean applyFiltering) {
+        Pathfinder activePathfinder = ShortestPathPlugin.getPathfinder();
+        if (activePathfinder != null && path != null && path.equals(activePathfinder.getPath())) {
+            List<Transport> exactTransports =
+                    activePathfinder.getSelectedTransports(indexOfStartPoint);
+            if (!exactTransports.isEmpty()) {
+                return applyFiltering ? applyTransportFiltering(exactTransports) : exactTransports;
+            }
+        }
+
         List<Transport> transportList = new ArrayList<>();
         int currentIndex = indexOfStartPoint;
 
@@ -6788,13 +6797,25 @@ public class Rs2Walker {
                 && recentlyOpenedStationaryDoorOnSegment(path.get(indexOfStartPoint), path.get(indexOfStartPoint + 1))) {
             return false;
         }
-        Set<Transport> transports = ShortestPathPlugin.getTransports().get(path.get(indexOfStartPoint));
+        if (path == null || indexOfStartPoint < 0 || indexOfStartPoint >= path.size() - 1) {
+            return false;
+        }
+        Pathfinder activePathfinder = ShortestPathPlugin.getPathfinder();
+        Transport selectedTransport = activePathfinder == null
+                ? null
+                : activePathfinder.getTransportForEdge(
+                        path.get(indexOfStartPoint),
+                        path.get(indexOfStartPoint + 1));
+        Set<Transport> transports = selectedTransport == null
+                ? ShortestPathPlugin.getTransports().get(path.get(indexOfStartPoint))
+                : Collections.singleton(selectedTransport);
         if (transports == null || transports.isEmpty()) {
             return false;
         }
         if (log.isDebugEnabled()) {
-            log.debug("[Walker] handleTransports at {}: {} candidates — {}", path.get(indexOfStartPoint),
+            log.debug("[Walker] handleTransports at {}: {} candidates (exact={}) — {}", path.get(indexOfStartPoint),
                     transports.size(),
+                    selectedTransport != null,
                     transports.stream().map(Transport::getDisplayInfo).collect(Collectors.joining(", ")));
         }
         // When the player is inside a POH instance, the player's raw world-location plane is
@@ -6917,6 +6938,7 @@ public class Rs2Walker {
                                 } else if (Objects.equals(transport.getName(), "Mountain Guide")) {
                                     Rs2Dialogue.clickOption(transport.getDisplayInfo());
                                 }
+                                clickTransportDialogueDestinationIfPresent(transport);
                                 sleepUntil(() -> !Rs2Player.isAnimating());
                                 boolean shipNearDest = sleepUntil(
                                         () -> isPlayerWithinChebyshevOf(transport.getDestination(), TRANSPORT_NEAR_LANDING_CHEBYSHEV),
@@ -7099,7 +7121,7 @@ public class Rs2Walker {
 
                     if (transport.getType() == TransportType.TELEPORTATION_SPELL) {
                         if (attemptObserved(transport, () -> handleTeleportSpell(transport))) {
-                            if (isLumbridgeHomeTeleport(transport)) {
+                            if (isHomeTeleport(transport)) {
                                 sleepUntilTrue(() -> isPlayerWithinChebyshevOf(transport.getDestination(), OFFSET), 600, 35000);
                             } else {
                                 sleepUntil(() -> !Rs2Player.isAnimating());
@@ -7120,10 +7142,19 @@ public class Rs2Walker {
                         }
                     }
 
-                    if (transport.getObjectId() <= 0) break;
+                    if (isAutomaticTriggerTransport(transport)) {
+                        if (attemptObserved(transport, () -> handleAutomaticTriggerTransport(transport))) {
+                            return finishHandledTransport(transport);
+                        }
+                        break;
+                    }
+
+                    if (transport.getObjectId() <= 0
+                            && (transport.getName() == null || transport.getName().isBlank())) break;
 
                     final int transportObjectId = transport.getObjectId();
                     final String transportAction = transport.getAction();
+                    final String transportObjectName = transport.getName();
                     final List<String> transportActions = getTransportActionOptions(transportAction);
                     // Climb-down transports have a closed-variant (trapdoor/manhole/grate/hatch)
                     // that shares the same tile but a different object ID. Infer the closed
@@ -7137,6 +7168,13 @@ public class Rs2Walker {
                         if (o.getId() == transportObjectId) return true;
                         Integer legacyClosed = OPEN_TO_CLOSED_MAPPINGS.get(transportObjectId);
                         if (legacyClosed != null && o.getId() == legacyClosed) return true;
+                        if (transportObjectId <= 0) {
+                            ObjectComposition comp = Rs2GameObject.convertToObjectComposition(o);
+                            if (comp == null || comp.getName() == null) return false;
+                            String actualName = Rs2UiHelper.stripColTags(comp.getName());
+                            return transportObjectName.equalsIgnoreCase(actualName)
+                                    && resolveTransportObjectAction(comp.getActions(), transportActions).isPresent();
+                        }
                         if (!allowClosedVariant) return false;
                         ObjectComposition comp = Rs2GameObject.convertToObjectComposition(o);
                         if (comp == null || comp.getActions() == null) return false;
@@ -7339,6 +7377,7 @@ public class Rs2Walker {
         WorldPoint before = Rs2Player.getWorldLocation();
         Rs2GameObject.interact(tileObject, action);
         if (handleObjectExceptions(transport, tileObject)) return true;
+        clickTransportDialogueDestinationIfPresent(transport);
         WorldPoint tdObj = transport.getDestination();
         WorldPoint plObj = Rs2Player.getWorldLocation();
         if (tdObj == null || plObj == null) {
@@ -7841,7 +7880,46 @@ public class Rs2Walker {
         if (MagicMushtree.isMagicMushtree(tileObject)) {
             return MagicMushtree.handleTransport(transport);
         }
+
+        if (transport.getType() == TransportType.HOT_AIR_BALLOON) {
+            return handleHotAirBalloon(transport);
+        }
         return false;
+    }
+
+    private static boolean handleHotAirBalloon(Transport transport) {
+        final int destinationComponent;
+        switch (transport.getDisplayInfo()) {
+            case "Castle Wars":
+                destinationComponent = InterfaceID.ZepBalloonMap.BTN_CAST;
+                break;
+            case "Grand Tree":
+                destinationComponent = InterfaceID.ZepBalloonMap.BTN_GNO;
+                break;
+            case "Crafting Guild":
+                destinationComponent = InterfaceID.ZepBalloonMap.BTN_CRAFT;
+                break;
+            case "Entrana":
+                destinationComponent = InterfaceID.ZepBalloonMap.BTN_ENT;
+                break;
+            case "Taverley":
+                destinationComponent = InterfaceID.ZepBalloonMap.BTN_TAV;
+                break;
+            case "Varrock":
+                destinationComponent = InterfaceID.ZepBalloonMap.BTN_VARR;
+                break;
+            default:
+                return false;
+        }
+
+        if (!sleepUntil(() -> Rs2Widget.isWidgetVisible(destinationComponent), 5000)
+                || !Rs2Widget.clickWidget(destinationComponent)) {
+            return false;
+        }
+        return sleepUntilTrue(
+                () -> isPlayerWithinChebyshevOf(transport.getDestination(), OFFSET),
+                TRANSPORT_LANDING_WAIT_POLL_MS,
+                TRANSPORT_LANDING_WAIT_TIMEOUT_MS);
     }
 
     private static boolean handleWildernessObelisk(Transport transport) {
@@ -7863,17 +7941,28 @@ public class Rs2Walker {
 
     private static boolean handleTeleportSpell(Transport transport) {
         if (Rs2Pvp.isInWilderness() && (Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) > (transport.getMaxWildernessLevel() + 1))) return false;
-        boolean hasMultipleDestination = transport.getDisplayInfo().contains(":");
+        if (isHomeTeleport(transport)) {
+            Rs2Tab.switchToMagicTab();
+            if (!sleepUntil(() -> Rs2Widget.findWidget(transport.getDisplayInfo()) != null, 3000)) {
+                return false;
+            }
+            return Rs2Widget.clickWidget(transport.getDisplayInfo(), true);
+        }
+        String displayInfo = transport.getDisplayInfo();
+        boolean hasMultipleDestination = displayInfo.contains(":");
+        boolean hasHouseDestinationOverride = displayInfo.matches("(?i).*\\s+\\((inside|outside)\\)$");
 
         String spellName = hasMultipleDestination
-                ? transport.getDisplayInfo().split(":")[0].trim().toLowerCase()
-                : transport.getDisplayInfo().toLowerCase();
+                ? displayInfo.split(":")[0].trim().toLowerCase()
+                : displayInfo.replaceFirst("(?i)\\s+\\((inside|outside)\\)$", "").toLowerCase();
 
         String option = hasMultipleDestination
-                ? transport.getDisplayInfo().split(":")[1].trim().toLowerCase()
+                ? displayInfo.split(":")[1].trim().toLowerCase()
+                : hasHouseDestinationOverride
+                ? displayInfo.substring(displayInfo.lastIndexOf('(') + 1, displayInfo.length() - 1).toLowerCase()
                 : "cast";
 
-        int identifier = hasMultipleDestination
+        int identifier = hasMultipleDestination || hasHouseDestinationOverride
                 ? 2
                 : 1;
 
@@ -7887,9 +7976,70 @@ public class Rs2Walker {
         return false;
     }
 
-    private static boolean isLumbridgeHomeTeleport(Transport transport) {
-        return transport.getDisplayInfo() != null
-                && transport.getDisplayInfo().toLowerCase().startsWith("lumbridge home teleport");
+    private static boolean clickTransportDialogueDestinationIfPresent(Transport transport) {
+        String displayInfo = transport.getDisplayInfo();
+        WorldPoint destination = transport.getDestination();
+        if (displayInfo == null || displayInfo.isBlank()) {
+            return false;
+        }
+
+        sleepUntil(() -> Rs2Dialogue.hasSelectAnOption()
+                || isPlayerWithinChebyshevOf(destination, OFFSET), 1800);
+        if (!Rs2Dialogue.hasSelectAnOption()) {
+            return false;
+        }
+
+        List<String> candidates = new ArrayList<>();
+        candidates.add(displayInfo);
+        int separator = displayInfo.indexOf(':');
+        if (separator >= 0 && separator + 1 < displayInfo.length()) {
+            String label = displayInfo.substring(separator + 1).trim();
+            candidates.add(label);
+            if (label.endsWith(".")) {
+                candidates.add(label.substring(0, label.length() - 1));
+            }
+        }
+        return Rs2Dialogue.clickOption(candidates.toArray(new String[0]));
+    }
+
+    private static boolean isAutomaticTriggerTransport(Transport transport) {
+        return transport.getType() == TransportType.TRANSPORT
+                && transport.getSource().startsWith("Skretzo/shortest-path@")
+                && transport.getOrigin() != null
+                && transport.getObjectId() <= 0
+                && (transport.getAction() == null || transport.getAction().isBlank())
+                && (transport.getName() == null || transport.getName().isBlank());
+    }
+
+    private static boolean handleAutomaticTriggerTransport(Transport transport) {
+        WorldPoint origin = transport.getOrigin();
+        WorldPoint destination = transport.getDestination();
+        if (origin == null || destination == null) {
+            return false;
+        }
+        if (isPlayerWithinChebyshevOf(destination, OFFSET)) {
+            return true;
+        }
+
+        WorldPoint player = Rs2Player.getWorldLocation();
+        boolean clicked = walkFastCanvas(origin);
+        if (!clicked && player != null) {
+            clicked = walkMiniMapToward(origin, player, 13);
+        }
+        if (!clicked) {
+            clicked = walkMiniMap(origin);
+        }
+        if (!clicked && !origin.equals(player)) {
+            return false;
+        }
+        return sleepUntil(() -> isPlayerWithinChebyshevOf(destination, OFFSET),
+                TRANSPORT_LANDING_WAIT_TIMEOUT_MS);
+    }
+
+    private static boolean isHomeTeleport(Transport transport) {
+        return "TELEPORTATION_SPELL_HOME".equals(transport.getCatalogType())
+                || transport.getDisplayInfo() != null
+                && transport.getDisplayInfo().toLowerCase().endsWith("home teleport");
     }
 
     private static boolean handleTeleportItem(Transport transport) {
@@ -9791,4 +9941,3 @@ public class Rs2Walker {
         return sleepUntil(() -> !Rs2Widget.isWidgetVisible(InterfaceID.Worldmap.CLOSE), 3000);
     }
 }
-

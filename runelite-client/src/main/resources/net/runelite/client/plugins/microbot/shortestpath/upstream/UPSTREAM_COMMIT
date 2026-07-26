@@ -1,0 +1,5 @@
+repository=https://github.com/Skretzo/shortest-path
+commit=e3dc7c5a621ca9cdd4c404ca4da5654b603286e7
+version=1.20.6
+collision_map_sha256=4cb2d04f84898fc2f90c055ab45a98d3960ce67f57c5ff8786ec3e4e450b3bdd
+collision_map_regions=2724

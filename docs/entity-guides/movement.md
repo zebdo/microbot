@@ -295,3 +295,13 @@ Sticky interim targets should also clear when route-index progress goes stale. I
 When a route-following minimap click is outside the minimap clip, fallback clicks must stay on the raw path. A generic "reachable tile closer to target" fallback can select a tile far away from the route in open areas, especially near the final destination.
 
 For adjacent same-plane shortcuts, do not treat any movement away from the origin as success. Some shortcuts, such as stepping stones, can fail and place the player on a fallback tile; once the player is settled away from the expected destination, stop the landing wait and replan from the actual tile.
+
+## 14. Execute the exact transport selected by the pathfinder
+
+Multiple catalog transports can share an origin or destination while having different requirements, costs, or actions. Keep the chosen `Transport` on the route edge and dispatch that exact instance. Do not reconstruct the choice later by scanning every transport at the same world point.
+
+Catalog rows are also an execution contract: a row may enter automated pathfinding only when `TransportExecutionRegistry` confirms that the walker has enough metadata and a handler for its family. New upstream rows should fail closed until their interaction can be verified.
+
+**Why this matters:** Re-selecting at execution time can use a more expensive or unavailable alternative even though the pathfinder evaluated another edge. Treating every parsed row as executable can leave the walker repeatedly attempting a transport whose widget or POH facility is unsupported.
+
+**Defensive check:** Add two transports with the same origin and destination but different identities and costs. The route steps and walker lookup must return the lower-cost instance selected by the pathfinder. A catalog row without executable object metadata must be absent from the usable transport set.

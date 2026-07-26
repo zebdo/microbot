@@ -308,11 +308,22 @@ public interface ShortestPathConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "useTeleportationSpellsHome",
+            name = "Use home teleport spells",
+            description = "Whether to include Lumbridge-, Edgeville-, Lunar- and Arceuus-home teleports in the path",
+            position = 16,
+            section = sectionSettings
+    )
+    default boolean useTeleportationSpellsHome() {
+        return true;
+    }
+
+    @ConfigItem(
             keyName = "useTeleportationMinigames",
             name = "Use teleportation to minigames",
             description = "Whether to include teleportation to minigames/activities/grouping in the path<br>" +
                     "(e.g. the Nightmare Zone minigame teleport). These teleports share a 20 minute cooldown.",
-            position = 16,
+            position = 17,
             section = sectionSettings
     )
     default boolean useTeleportationMinigames() {
@@ -323,7 +334,7 @@ public interface ShortestPathConfig extends Config {
             keyName = "useWildernessObelisks",
             name = "Use wilderness obelisks",
             description = "Whether to include wilderness obelisks in the path",
-            position = 17,
+            position = 18,
             section = sectionSettings
     )
     default boolean useWildernessObelisks() {
@@ -334,7 +345,7 @@ public interface ShortestPathConfig extends Config {
             keyName = "useNpcs",
             name = "Use npcs",
             description = "Whether to include npc transports in the path<br>(e.g. Tree gnome village maze or Lumbridge cellar)",
-            position = 18,
+            position = 19,
             section = sectionSettings
     )
     default boolean useNpcs() {
@@ -345,7 +356,7 @@ public interface ShortestPathConfig extends Config {
             keyName = "useQuetzals",
             name = "Use quetzals",
             description = "Whether to include quetzals in the path.<br>",
-            position = 19,
+            position = 20,
             section = sectionSettings
     )
     default boolean useQuetzals() {
@@ -356,7 +367,7 @@ public interface ShortestPathConfig extends Config {
             keyName = "useMagicCarpets",
             name = "Use Magic Carpets",
             description = "Whether to include magic carpets in the path.<br>",
-            position = 20,
+            position = 21,
             section = sectionSettings
     )
     default boolean useMagicCarpets() {
@@ -367,7 +378,7 @@ public interface ShortestPathConfig extends Config {
             keyName = "useHotAirBalloons",
             name = "Use Hot Air Balloons",
             description = "Whether to include hot air balloons in the path.",
-            position = 21,
+            position = 22,
             section = sectionSettings
     )
     default boolean useHotAirBalloons() {
@@ -378,7 +389,7 @@ public interface ShortestPathConfig extends Config {
             keyName = "useMagicMushtrees",
             name = "Use Magic Mushtrees",
             description = "Whether to include magic mushtrees in the path.",
-            position = 22,
+            position = 23,
             section = sectionSettings
     )
     default boolean useMagicMushtrees() {
@@ -389,7 +400,7 @@ public interface ShortestPathConfig extends Config {
             keyName = "useSeasonalTransports",
             name = "Use Seasonal Transports",
             description = "Whether to include seasonal League transports (e.g. Map of Alacrity) in the path. League worlds only.",
-            position = 23,
+            position = 24,
             section = sectionSettings
     )
     default boolean useSeasonalTransports() {
@@ -400,7 +411,7 @@ public interface ShortestPathConfig extends Config {
             keyName = "usePoh",
             name = "Use Player-owned-house Teleports",
             description = "Whether to include teleportation through the PoH",
-            position = 24,
+            position = 25,
             section = sectionSettings
     )
     default boolean usePoh() {
@@ -412,7 +423,7 @@ public interface ShortestPathConfig extends Config {
             name = "Cancel instead of recalculating",
             description = "Whether the path should be cancelled rather than recalculated " +
                     "when the recalculate distance limit is exceeded",
-            position = 25,
+            position = 26,
             section = sectionSettings
     )
     default boolean cancelInstead() {
@@ -423,7 +434,7 @@ public interface ShortestPathConfig extends Config {
             keyName = "showTransportInfo",
             name = "Show transport info",
             description = "Whether to display transport destination hint info, e.g. which chat option and text to click",
-            position = 26,
+            position = 27,
             section = sectionSettings
     )
     default boolean showTransportInfo() {
@@ -435,7 +446,7 @@ public interface ShortestPathConfig extends Config {
             name = "Teleport distance",
             description = "Distance before using a teleport<br>" +
                     "(This is to avoid using teleports when you are to close",
-            position = 27,
+            position = 28,
             section = sectionSettings
     )
     default int distanceBeforeUsingTeleport() {
@@ -450,7 +461,7 @@ public interface ShortestPathConfig extends Config {
             keyName = "recalculateDistance",
             name = "Recalculate distance",
             description = "Distance from the path the player should be for it to be recalculated (-1 for never)",
-            position = 28,
+            position = 29,
             section = sectionSettings
     )
     default int recalculateDistance() {
@@ -465,7 +476,7 @@ public interface ShortestPathConfig extends Config {
             keyName = "finishDistance",
             name = "Finish distance",
             description = "Distance from the target tile at which the path should be ended (-1 for never)",
-            position = 29,
+            position = 30,
             section = sectionSettings
     )
     default int reachedDistance() {
@@ -476,7 +487,7 @@ public interface ShortestPathConfig extends Config {
             keyName = "showTileCounter",
             name = "Show tile counter",
             description = "Whether to display the number of tiles travelled, number of tiles remaining or disable counting",
-            position = 30,
+            position = 31,
             section = sectionSettings
     )
     default TileCounter showTileCounter() {
@@ -487,7 +498,7 @@ public interface ShortestPathConfig extends Config {
             keyName = "tileCounterStep",
             name = "Tile counter step",
             description = "The number of tiles between the displayed tile counter numbers",
-            position = 31,
+            position = 32,
             section = sectionSettings
     )
     default int tileCounterStep()
@@ -507,13 +518,153 @@ public interface ShortestPathConfig extends Config {
             name = "Calculation cutoff",
             description = "The cutoff threshold in number of ticks (0.6 seconds) of no progress being<br>" +
                     "made towards the path target before the calculation will be stopped",
-            position = 32,
+            position = 33,
             section = sectionSettings
     )
     default int calculationCutoff()
     {
         return 5;
     }
+
+    @ConfigSection(
+            name = "Transport thresholds",
+            description = "Extra path cost, in tiles, required before preferring each transport family",
+            position = 5,
+            closedByDefault = true
+    )
+    String sectionTransportThresholds = "sectionTransportThresholds";
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "currencyThreshold", name = "Currency threshold",
+            description = "Maximum currency consumed by one transport", position = 0,
+            section = sectionTransportThresholds)
+    default int currencyThreshold() { return 100000; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costAgilityShortcuts", name = "Agility shortcuts",
+            description = "Additional path cost", position = 1, section = sectionTransportThresholds)
+    default int costAgilityShortcuts() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costGrappleShortcuts", name = "Grapple shortcuts",
+            description = "Additional path cost", position = 2, section = sectionTransportThresholds)
+    default int costGrappleShortcuts() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costBoats", name = "Boats",
+            description = "Additional path cost", position = 3, section = sectionTransportThresholds)
+    default int costBoats() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costCanoes", name = "Canoes",
+            description = "Additional path cost", position = 4, section = sectionTransportThresholds)
+    default int costCanoes() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costCharterShips", name = "Charter ships",
+            description = "Additional path cost", position = 5, section = sectionTransportThresholds)
+    default int costCharterShips() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costShips", name = "Passenger ships",
+            description = "Additional path cost", position = 6, section = sectionTransportThresholds)
+    default int costShips() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costFairyRings", name = "Fairy rings",
+            description = "Additional path cost", position = 7, section = sectionTransportThresholds)
+    default int costFairyRings() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costGnomeGliders", name = "Gnome gliders",
+            description = "Additional path cost", position = 8, section = sectionTransportThresholds)
+    default int costGnomeGliders() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costHotAirBalloons", name = "Hot-air balloons",
+            description = "Additional path cost", position = 9, section = sectionTransportThresholds)
+    default int costHotAirBalloons() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costMagicCarpets", name = "Magic carpets",
+            description = "Additional path cost", position = 10, section = sectionTransportThresholds)
+    default int costMagicCarpets() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costMagicMushtrees", name = "Magic mushtrees",
+            description = "Additional path cost", position = 11, section = sectionTransportThresholds)
+    default int costMagicMushtrees() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costMinecarts", name = "Minecarts",
+            description = "Additional path cost", position = 12, section = sectionTransportThresholds)
+    default int costMinecarts() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costQuetzals", name = "Quetzals",
+            description = "Additional path cost", position = 13, section = sectionTransportThresholds)
+    default int costQuetzals() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costQuetzalWhistle", name = "Quetzal whistle",
+            description = "Additional cost over a normal quetzal route", position = 14,
+            section = sectionTransportThresholds)
+    default int costQuetzalWhistle() { return 15; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costSpiritTrees", name = "Spirit trees",
+            description = "Additional path cost", position = 15, section = sectionTransportThresholds)
+    default int costSpiritTrees() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costNonConsumableTeleportationItems", name = "Permanent teleport items",
+            description = "Additional path cost", position = 16, section = sectionTransportThresholds)
+    default int costNonConsumableTeleportationItems() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costConsumableTeleportationItems", name = "Consumable teleport items",
+            description = "Additional path cost", position = 17, section = sectionTransportThresholds)
+    default int costConsumableTeleportationItems() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costTeleportationBoxes", name = "Teleportation boxes",
+            description = "Additional path cost", position = 18, section = sectionTransportThresholds)
+    default int costTeleportationBoxes() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costTeleportationLevers", name = "Teleportation levers",
+            description = "Additional path cost", position = 19, section = sectionTransportThresholds)
+    default int costTeleportationLevers() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costTeleportationPortals", name = "Teleportation portals",
+            description = "Additional path cost", position = 20, section = sectionTransportThresholds)
+    default int costTeleportationPortals() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costTeleportationSpells", name = "Teleportation spells",
+            description = "Additional path cost", position = 21, section = sectionTransportThresholds)
+    default int costTeleportationSpells() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costTeleportationSpellsHome", name = "Home teleport spells",
+            description = "Additional path cost", position = 22, section = sectionTransportThresholds)
+    default int costTeleportationSpellsHome() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costTeleportationMinigames", name = "Minigame teleports",
+            description = "Additional path cost", position = 23, section = sectionTransportThresholds)
+    default int costTeleportationMinigames() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costWildernessObelisks", name = "Wilderness obelisks",
+            description = "Additional path cost", position = 24, section = sectionTransportThresholds)
+    default int costWildernessObelisks() { return 0; }
+
+    @Range(min = 0, max = 10000)
+    @ConfigItem(keyName = "costSeasonalTransports", name = "Seasonal transports",
+            description = "Additional path cost", position = 25, section = sectionTransportThresholds)
+    default int costSeasonalTransports() { return 0; }
 
     @ConfigSection(
             name = "Display",

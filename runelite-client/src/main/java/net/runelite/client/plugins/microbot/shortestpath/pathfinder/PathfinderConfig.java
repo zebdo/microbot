@@ -12,6 +12,9 @@ import net.runelite.client.plugins.itemcharges.ItemChargeConfig;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.shortestpath.*;
 import net.runelite.client.plugins.microbot.shortestpath.pathfinder.policy.TransportRequirementPolicy;
+import net.runelite.client.plugins.microbot.shortestpath.transport.requirement.ItemRequirement;
+import net.runelite.client.plugins.microbot.shortestpath.leagues.PinnedLeagueRegion;
+import net.runelite.client.plugins.microbot.shortestpath.leagues.PinnedLeagueRegionMap;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -93,6 +96,7 @@ public class PathfinderConfig {
 
     private final Client client;
     private final ShortestPathConfig config;
+    private volatile Rs2LeaguesTransport.LeaguesContext leaguesContext;
 
     private final List<QuestState> questStateOrder = Arrays.asList(
             QuestState.NOT_STARTED,
@@ -123,6 +127,7 @@ public class PathfinderConfig {
             useTeleportationMinigames,
             useTeleportationPortals,
             useTeleportationSpells,
+            useTeleportationSpellsHome,
             useMagicCarpets,
             useHotAirBalloons,
             useMagicMushtrees,
@@ -158,6 +163,7 @@ public class PathfinderConfig {
     private volatile boolean useBankItems = false;
 
     private Set<Integer> refreshAvailableItemIds;
+    private Map<Integer, Integer> refreshAvailableItemQuantities;
     private int[] refreshBoostedLevels;
     private Map<String, int[]> refreshCurrencyCache;
     private static final Skill[] SKILLS = Skill.values();
@@ -216,6 +222,7 @@ public class PathfinderConfig {
         useTeleportationLevers = ShortestPathPlugin.override("useTeleportationLevers", config.useTeleportationLevers());
         useTeleportationPortals = ShortestPathPlugin.override("useTeleportationPortals", config.useTeleportationPortals());
         useTeleportationSpells = ShortestPathPlugin.override("useTeleportationSpells", config.useTeleportationSpells());
+        useTeleportationSpellsHome = ShortestPathPlugin.override("useTeleportationSpellsHome", config.useTeleportationSpellsHome());
         useWildernessObelisks = ShortestPathPlugin.override("useWildernessObelisks", config.useWildernessObelisks());
         useMagicCarpets = ShortestPathPlugin.override("useMagicCarpets", config.useMagicCarpets());
         useHotAirBalloons = ShortestPathPlugin.override("useHotAirBalloons", config.useHotAirBalloons());
@@ -317,6 +324,7 @@ public class PathfinderConfig {
                 && QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TWILIGHTS_PROMISE));
 
         final Rs2LeaguesTransport.LeaguesContext leaguesCtx = Rs2LeaguesTransport.leaguesContext();
+        leaguesContext = leaguesCtx;
         final int refreshCacheKeyHash = computeTransportRefreshCacheKeyHash(target, leaguesCtx);
 
         TransportRefreshSnapshot snap = transportRefreshSnapshot;
@@ -351,11 +359,12 @@ public class PathfinderConfig {
 
         long cacheStart = System.currentTimeMillis();
         refreshAvailableItemIds = new HashSet<>();
+        refreshAvailableItemQuantities = new HashMap<>();
         refreshCurrencyCache = new HashMap<>();
-        Rs2Inventory.items().forEach(item -> refreshAvailableItemIds.add(item.getId()));
-        Rs2Equipment.all().forEach(item -> refreshAvailableItemIds.add(item.getId()));
+        Rs2Inventory.items().forEach(item -> cacheAvailableItem(item.getId(), item.getQuantity()));
+        Rs2Equipment.all().forEach(item -> cacheAvailableItem(item.getId(), Math.max(1, item.getQuantity())));
         if (useBankItems) {
-            Rs2Bank.getAll().forEach(item -> refreshAvailableItemIds.add(item.getId()));
+            Rs2Bank.getAll().forEach(item -> cacheAvailableItem(item.getId(), item.getQuantity()));
         }
 
         Set<Integer> varbitIds = new HashSet<>();
@@ -461,6 +470,7 @@ public class PathfinderConfig {
         long similarTime = System.currentTimeMillis() - similarStart;
 
         refreshAvailableItemIds = null;
+        refreshAvailableItemQuantities = null;
         refreshBoostedLevels = null;
         refreshCurrencyCache = null;
 
@@ -530,6 +540,21 @@ public class PathfinderConfig {
         blockedTransportEdgesPacked.add(transportEdgeKey(
                 WorldPointUtil.packWorldPoint(origin),
                 WorldPointUtil.packWorldPoint(destination)));
+        if (origin.getPlane() != destination.getPlane()) {
+            return;
+        }
+
+        int x = origin.getX();
+        int y = origin.getY();
+        while (x != destination.getX() || y != destination.getY()) {
+            int nextX = x + Integer.signum(destination.getX() - x);
+            int nextY = y + Integer.signum(destination.getY() - y);
+            blockedTransportEdgesPacked.add(transportEdgeKey(
+                    WorldPointUtil.packWorldPoint(x, y, origin.getPlane()),
+                    WorldPointUtil.packWorldPoint(nextX, nextY, origin.getPlane())));
+            x = nextX;
+            y = nextY;
+        }
     }
 
     private static Set<Long> loadStaticBlockedEdgesFromResources() {
@@ -807,6 +832,23 @@ public class PathfinderConfig {
                 && !isInWilderness(packedPosition) && isInWilderness(packedNeighborPosition);
     }
 
+    public boolean isInAlwaysBlockedLeagueRegion(int packedPoint) {
+        Rs2LeaguesTransport.LeaguesContext context = leaguesContext;
+        return context != null
+                && context.isActive()
+                && PinnedLeagueRegionMap.getRegion(
+                        WorldPointUtil.unpackWorldPoint(packedPoint)) == PinnedLeagueRegion.MISTHALIN;
+    }
+
+    public boolean avoidAlwaysBlockedLeagueRegion(
+            int packedPosition,
+            int packedNeighborPosition,
+            boolean targetInBlockedRegion) {
+        return !targetInBlockedRegion
+                && !isInAlwaysBlockedLeagueRegion(packedPosition)
+                && isInAlwaysBlockedLeagueRegion(packedNeighborPosition);
+    }
+
     public boolean isInLevel20Wilderness(int packedPoint) {
         return WorldPointUtil.distanceToArea(packedPoint, WILDERNESS_ABOVE_GROUND_LEVEL_20) == 0
                 || WorldPointUtil.distanceToArea(packedPoint, WILDERNESS_UNDERGROUND_LEVEL_20) == 0;
@@ -838,6 +880,13 @@ public class PathfinderConfig {
     }
 
     private boolean useTransport(Transport transport) {
+        if (!TransportExecutionRegistry.canExecute(transport)) {
+            log.debug("Transport ( O: {} D: {} type={} ) has no registered walker executor",
+                    transport == null ? null : transport.getOrigin(),
+                    transport == null ? null : transport.getDestination(),
+                    transport == null ? null : transport.getType());
+            return false;
+        }
         // Check if the feature flag is disabled
         if (!isFeatureEnabled(transport)) {
             log.debug("Transport Type {} is disabled by feature flag", transport.getType());
@@ -872,6 +921,12 @@ public class PathfinderConfig {
         // If the transport has varplayer requirements & the varplayers do not match
         if (!varplayerChecks(transport)) {
             log.debug("Transport ( O: {} D: {} ) requires varplayers {}", transport.getOrigin(), transport.getDestination(), transport.getVarplayers());
+            return false;
+        }
+
+        if (exceedsCurrencyThreshold(transport)) {
+            log.debug("Transport ( O: {} D: {} ) exceeds the configured currency threshold",
+                    transport.getOrigin(), transport.getDestination());
             return false;
         }
 
@@ -927,6 +982,116 @@ public class PathfinderConfig {
         }
 
         return true;
+    }
+
+    public int getTransportCost(Transport transport) {
+        if (transport == null || transport.getType() == null || config == null) {
+            return 0;
+        }
+        int cost;
+        switch (transport.getType()) {
+            case AGILITY_SHORTCUT:
+                cost = config.costAgilityShortcuts();
+                break;
+            case GRAPPLE_SHORTCUT:
+                cost = config.costGrappleShortcuts();
+                break;
+            case BOAT:
+                cost = config.costBoats();
+                break;
+            case CANOE:
+                cost = config.costCanoes();
+                break;
+            case CHARTER_SHIP:
+                cost = config.costCharterShips();
+                break;
+            case SHIP:
+                cost = config.costShips();
+                break;
+            case FAIRY_RING:
+                cost = config.costFairyRings();
+                break;
+            case GNOME_GLIDER:
+                cost = config.costGnomeGliders();
+                break;
+            case HOT_AIR_BALLOON:
+                cost = config.costHotAirBalloons();
+                break;
+            case MAGIC_CARPET:
+                cost = config.costMagicCarpets();
+                break;
+            case MAGIC_MUSHTREE:
+                cost = config.costMagicMushtrees();
+                break;
+            case MINECART:
+                cost = config.costMinecarts();
+                break;
+            case QUETZAL:
+                cost = config.costQuetzals();
+                break;
+            case SPIRIT_TREE:
+                cost = config.costSpiritTrees();
+                break;
+            case TELEPORTATION_ITEM:
+                cost = transport.isConsumable()
+                        ? config.costConsumableTeleportationItems()
+                        : config.costNonConsumableTeleportationItems();
+                if ("QUETZAL_WHISTLE".equals(transport.getCatalogType())) {
+                    cost += config.costQuetzals() + config.costQuetzalWhistle();
+                }
+                break;
+            case TELEPORTATION_LEVER:
+                cost = config.costTeleportationLevers();
+                break;
+            case TELEPORTATION_PORTAL:
+                cost = "TELEPORTATION_BOX".equals(transport.getCatalogType())
+                        ? config.costTeleportationBoxes()
+                        : config.costTeleportationPortals();
+                break;
+            case TELEPORTATION_SPELL:
+                cost = "TELEPORTATION_SPELL_HOME".equals(transport.getCatalogType())
+                        ? config.costTeleportationSpellsHome()
+                        : config.costTeleportationSpells();
+                break;
+            case TELEPORTATION_MINIGAME:
+                cost = config.costTeleportationMinigames();
+                break;
+            case WILDERNESS_OBELISK:
+                cost = config.costWildernessObelisks();
+                break;
+            case SEASONAL_TRANSPORT:
+                cost = config.costSeasonalTransports();
+                break;
+            default:
+                cost = 0;
+        }
+        return Math.max(0, cost);
+    }
+
+    private boolean exceedsCurrencyThreshold(Transport transport) {
+        if (config == null) {
+            return false;
+        }
+        int threshold = Math.max(0, config.currencyThreshold());
+        if (transport.getCurrencyAmount() > threshold) {
+            return true;
+        }
+        if (transport.getCanonicalItemRequirements() == null) {
+            return false;
+        }
+        for (ItemRequirement requirement : transport.getCanonicalItemRequirements().getRequirements()) {
+            if (requirement.getQuantity() <= threshold) {
+                continue;
+            }
+            for (int itemId : requirement.getItemIds()) {
+                if (itemId == ItemID.COINS || itemId == ItemID.ECTOTOKEN
+                        || itemId == ItemID.VILLAGE_TRADE_STICKS
+                        || itemId == ItemID.WARGUILD_TOKENS) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -1076,7 +1241,9 @@ public class PathfinderConfig {
             case TELEPORTATION_PORTAL:
                 return useTeleportationPortals;
             case TELEPORTATION_SPELL:
-                return useTeleportationSpells;
+                return "TELEPORTATION_SPELL_HOME".equals(transport.getCatalogType())
+                        ? useTeleportationSpellsHome
+                        : useTeleportationSpells;
             case MAGIC_CARPET:
                 return useMagicCarpets;
             case HOT_AIR_BALLOON:
@@ -1110,6 +1277,11 @@ public class PathfinderConfig {
     private boolean hasRequiredItems(Transport transport) {
         if (requiresChronicle(transport)) return hasChronicleCharges();
 
+        if (transport.getCanonicalItemRequirements() != null) {
+            return transport.getCanonicalItemRequirements().getRequirements().stream()
+                    .allMatch(this::hasCanonicalItemRequirement);
+        }
+
         if (refreshAvailableItemIds != null) {
             return transport.getItemIdRequirements()
                     .stream()
@@ -1120,6 +1292,48 @@ public class PathfinderConfig {
                 .stream()
                 .flatMap(Collection::stream)
                 .anyMatch(itemId -> Rs2Equipment.isWearing(itemId) || Rs2Inventory.hasItem(itemId) || (ShortestPathPlugin.getPathfinderConfig().useBankItems && Rs2Bank.hasItem(itemId)));
+    }
+
+    private void cacheAvailableItem(int itemId, int quantity) {
+        if (itemId < 0 || quantity <= 0) {
+            return;
+        }
+        refreshAvailableItemIds.add(itemId);
+        refreshAvailableItemQuantities.merge(itemId, quantity, Integer::sum);
+    }
+
+    private boolean hasCanonicalItemRequirement(ItemRequirement requirement) {
+        for (int staffId : requirement.getStaffIds()) {
+            if (Rs2Equipment.isWearing(staffId)) {
+                return true;
+            }
+        }
+        for (int offhandId : requirement.getOffhandIds()) {
+            if (Rs2Equipment.isWearing(offhandId)) {
+                return true;
+            }
+        }
+
+        for (int itemId : requirement.getItemIds()) {
+            if (getAvailableItemQuantity(itemId) >= requirement.getQuantity()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private int getAvailableItemQuantity(int itemId) {
+        if (refreshAvailableItemQuantities != null) {
+            return refreshAvailableItemQuantities.getOrDefault(itemId, 0);
+        }
+        int quantity = Rs2Inventory.count(itemId);
+        if (Rs2Equipment.isWearing(itemId)) {
+            quantity++;
+        }
+        if (useBankItems) {
+            quantity += Rs2Bank.count(itemId);
+        }
+        return quantity;
     }
 
     /**
@@ -1134,7 +1348,12 @@ public class PathfinderConfig {
 
 
     private boolean isTeleportationSpellUsable(Transport transport) {
-
+        if ("TELEPORTATION_SPELL_HOME".equals(transport.getCatalogType())) {
+            return true;
+        }
+        if (transport.getCanonicalItemRequirements() != null) {
+            return hasRequiredItems(transport);
+        }
         boolean hasMultipleDestination = transport.getDisplayInfo().contains(":");
         String displayInfo = hasMultipleDestination
                 ? transport.getDisplayInfo().split(":")[0].trim().toLowerCase()
@@ -1516,6 +1735,8 @@ public class PathfinderConfig {
         if (useTeleportationPortals) bits |= 1L << s;
         s++;
         if (useTeleportationSpells) bits |= 1L << s;
+        s++;
+        if (useTeleportationSpellsHome) bits |= 1L << s;
         s++;
         if (useMagicCarpets) bits |= 1L << s;
         s++;

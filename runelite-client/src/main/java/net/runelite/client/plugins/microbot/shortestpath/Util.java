@@ -3,6 +3,7 @@ package net.runelite.client.plugins.microbot.shortestpath;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 
 public class Util {
     public static byte[] readAllBytes(InputStream in) throws IOException {
@@ -18,5 +19,19 @@ public class Util {
 
             result.write(buffer, 0, read);
         }
+    }
+
+    public static int[] concatenate(int[][] arrays) {
+        int length = Arrays.stream(arrays).mapToInt(array -> array == null ? 0 : array.length).sum();
+        int[] result = new int[length];
+        int offset = 0;
+        for (int[] array : arrays) {
+            if (array == null) {
+                continue;
+            }
+            System.arraycopy(array, 0, result, offset, array.length);
+            offset += array.length;
+        }
+        return result;
     }
 }
