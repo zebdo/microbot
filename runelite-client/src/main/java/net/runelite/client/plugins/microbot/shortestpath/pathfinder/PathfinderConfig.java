@@ -12,7 +12,6 @@ import net.runelite.client.plugins.itemcharges.ItemChargeConfig;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.shortestpath.*;
 import net.runelite.client.plugins.microbot.shortestpath.pathfinder.policy.TransportRequirementPolicy;
-import net.runelite.client.plugins.microbot.shortestpath.transport.requirement.ItemRequirement;
 import net.runelite.client.plugins.microbot.shortestpath.leagues.PinnedLeagueRegion;
 import net.runelite.client.plugins.microbot.shortestpath.leagues.PinnedLeagueRegionMap;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
@@ -162,7 +161,6 @@ public class PathfinderConfig {
     // Used to include bank items when searching for item requirements
     private volatile boolean useBankItems = false;
 
-    private Set<Integer> refreshAvailableItemIds;
     private Map<Integer, Integer> refreshAvailableItemQuantities;
     private int[] refreshBoostedLevels;
     private Map<String, int[]> refreshCurrencyCache;
@@ -311,17 +309,29 @@ public class PathfinderConfig {
      */
     private void refreshTransports(WorldPoint target) {
         useFairyRings = ShortestPathPlugin.override("useFairyRings", config.useFairyRings())
-                && !QuestState.NOT_STARTED.equals(Rs2Player.getQuestState(Quest.FAIRYTALE_II__CURE_A_QUEEN))
-                && (Rs2Inventory.contains(ItemID.DRAMEN_STAFF, ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)
-                || Rs2Equipment.isWearing(ItemID.DRAMEN_STAFF, ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)
-                || (ShortestPathPlugin.getPathfinderConfig().useBankItems && (Rs2Bank.hasItem(ItemID.DRAMEN_STAFF) || Rs2Bank.hasItem(ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)))
-                || Microbot.getVarbitValue(VarbitID.LUMBRIDGE_DIARY_ELITE_COMPLETE) == 1);
+                && TransportRequirementPolicy.hasNetworkAccess(
+                        TransportType.FAIRY_RING,
+                        Rs2Player::getQuestState,
+                        Microbot::getVarbitValue,
+                        this::getLiveAvailableItemQuantity);
         useGnomeGliders = ShortestPathPlugin.override("useGnomeGliders", config.useGnomeGliders())
-                && QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.THE_GRAND_TREE));
+                && TransportRequirementPolicy.hasNetworkAccess(
+                        TransportType.GNOME_GLIDER,
+                        Rs2Player::getQuestState,
+                        Microbot::getVarbitValue,
+                        this::getLiveAvailableItemQuantity);
         useSpiritTrees = ShortestPathPlugin.override("useSpiritTrees", config.useSpiritTrees())
-                && QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TREE_GNOME_VILLAGE));
+                && TransportRequirementPolicy.hasNetworkAccess(
+                        TransportType.SPIRIT_TREE,
+                        Rs2Player::getQuestState,
+                        Microbot::getVarbitValue,
+                        this::getLiveAvailableItemQuantity);
         useQuetzals = ShortestPathPlugin.override("useQuetzals", config.useQuetzals())
-                && QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TWILIGHTS_PROMISE));
+                && TransportRequirementPolicy.hasNetworkAccess(
+                        TransportType.QUETZAL,
+                        Rs2Player::getQuestState,
+                        Microbot::getVarbitValue,
+                        this::getLiveAvailableItemQuantity);
 
         final Rs2LeaguesTransport.LeaguesContext leaguesCtx = Rs2LeaguesTransport.leaguesContext();
         leaguesContext = leaguesCtx;
@@ -358,7 +368,6 @@ public class PathfinderConfig {
         long mergeTime = System.currentTimeMillis() - mergeStart;
 
         long cacheStart = System.currentTimeMillis();
-        refreshAvailableItemIds = new HashSet<>();
         refreshAvailableItemQuantities = new HashMap<>();
         refreshCurrencyCache = new HashMap<>();
         Rs2Inventory.items().forEach(item -> cacheAvailableItem(item.getId(), item.getQuantity()));
@@ -469,7 +478,6 @@ public class PathfinderConfig {
         }
         long similarTime = System.currentTimeMillis() - similarStart;
 
-        refreshAvailableItemIds = null;
         refreshAvailableItemQuantities = null;
         refreshBoostedLevels = null;
         refreshCurrencyCache = null;
@@ -868,9 +876,7 @@ public class PathfinderConfig {
     }
 
     private boolean varplayerChecks(Transport transport) {
-        return transport.getVarplayers().isEmpty() ||
-                transport.getVarplayers().stream()
-                        .allMatch(varplayerCheck -> varplayerCheck.matches(getLiveVarplayerValue(varplayerCheck.getVarplayerId())));
+        return TransportRequirementPolicy.varplayerChecks(transport, this::getLiveVarplayerValue);
     }
 
     private int getLiveVarplayerValue(int varplayerId) {
@@ -1072,26 +1078,8 @@ public class PathfinderConfig {
         if (config == null) {
             return false;
         }
-        int threshold = Math.max(0, config.currencyThreshold());
-        if (transport.getCurrencyAmount() > threshold) {
-            return true;
-        }
-        if (transport.getCanonicalItemRequirements() == null) {
-            return false;
-        }
-        for (ItemRequirement requirement : transport.getCanonicalItemRequirements().getRequirements()) {
-            if (requirement.getQuantity() <= threshold) {
-                continue;
-            }
-            for (int itemId : requirement.getItemIds()) {
-                if (itemId == ItemID.COINS || itemId == ItemID.ECTOTOKEN
-                        || itemId == ItemID.VILLAGE_TRADE_STICKS
-                        || itemId == ItemID.WARGUILD_TOKENS) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return TransportRequirementPolicy.exceedsCurrencyThreshold(
+                transport, config.currencyThreshold());
     }
 
     /**
@@ -1113,16 +1101,12 @@ public class PathfinderConfig {
      * Checks if the player has all the required skill levels for the transport
      */
     private boolean hasRequiredLevels(Transport transport) {
-        int[] requiredLevels = transport.getSkillLevels();
         if (refreshBoostedLevels != null) {
-            for (int i = 0; i < requiredLevels.length; i++) {
-                if (requiredLevels[i] > 0 && refreshBoostedLevels[i] < requiredLevels[i]) return false;
-            }
-            return true;
+            return TransportRequirementPolicy.hasRequiredLevels(
+                    transport, skill -> refreshBoostedLevels[skill.ordinal()]);
         }
-        return IntStream.range(0, requiredLevels.length)
-            .filter(i -> requiredLevels[i] > 0)
-            .allMatch(i -> Microbot.getClient().getBoostedSkillLevel(SKILLS[i]) >= requiredLevels[i]);
+        return TransportRequirementPolicy.hasRequiredLevels(
+                transport, skill -> Microbot.getClient().getBoostedSkillLevel(skill));
     }
 
     /**
@@ -1184,25 +1168,9 @@ public class PathfinderConfig {
     private boolean isFeatureEnabled(Transport transport) {
         TransportType type = transport.getType();
 
-        if (!client.getWorldType().contains(WorldType.MEMBERS)) {
-            // Transport types that require membership
-            switch (type) {
-                case AGILITY_SHORTCUT:
-                case GRAPPLE_SHORTCUT:
-                case BOAT:
-                case CHARTER_SHIP:
-                case FAIRY_RING:
-                case GNOME_GLIDER:
-                case MINECART:
-                case POH:
-                case QUETZAL:
-                case WILDERNESS_OBELISK:
-                case TELEPORTATION_LEVER:
-                case TELEPORTATION_MINIGAME:
-                case MAGIC_CARPET:
-                case SPIRIT_TREE:
-                    return false;
-            }
+        if (!client.getWorldType().contains(WorldType.MEMBERS)
+                && TransportRequirementPolicy.requiresMembersWorld(transport)) {
+            return false;
         }
 
         switch (type) {
@@ -1276,56 +1244,31 @@ public class PathfinderConfig {
      */
     private boolean hasRequiredItems(Transport transport) {
         if (requiresChronicle(transport)) return hasChronicleCharges();
-
-        if (transport.getCanonicalItemRequirements() != null) {
-            return transport.getCanonicalItemRequirements().getRequirements().stream()
-                    .allMatch(this::hasCanonicalItemRequirement);
+        if (transport.getCanonicalItemRequirements() == null
+                && transport.getItemIdRequirements().isEmpty()) {
+            // Preserve fail-closed behavior for item-teleport rows that forgot
+            // to declare the item needed to execute them.
+            return false;
         }
-
-        if (refreshAvailableItemIds != null) {
-            return transport.getItemIdRequirements()
-                    .stream()
-                    .flatMap(Collection::stream)
-                    .anyMatch(refreshAvailableItemIds::contains);
-        }
-        return transport.getItemIdRequirements()
-                .stream()
-                .flatMap(Collection::stream)
-                .anyMatch(itemId -> Rs2Equipment.isWearing(itemId) || Rs2Inventory.hasItem(itemId) || (ShortestPathPlugin.getPathfinderConfig().useBankItems && Rs2Bank.hasItem(itemId)));
+        return TransportRequirementPolicy.hasRequiredItems(
+                transport, this::getAvailableItemQuantity, Rs2Equipment::isWearing);
     }
 
     private void cacheAvailableItem(int itemId, int quantity) {
         if (itemId < 0 || quantity <= 0) {
             return;
         }
-        refreshAvailableItemIds.add(itemId);
         refreshAvailableItemQuantities.merge(itemId, quantity, Integer::sum);
-    }
-
-    private boolean hasCanonicalItemRequirement(ItemRequirement requirement) {
-        for (int staffId : requirement.getStaffIds()) {
-            if (Rs2Equipment.isWearing(staffId)) {
-                return true;
-            }
-        }
-        for (int offhandId : requirement.getOffhandIds()) {
-            if (Rs2Equipment.isWearing(offhandId)) {
-                return true;
-            }
-        }
-
-        for (int itemId : requirement.getItemIds()) {
-            if (getAvailableItemQuantity(itemId) >= requirement.getQuantity()) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private int getAvailableItemQuantity(int itemId) {
         if (refreshAvailableItemQuantities != null) {
             return refreshAvailableItemQuantities.getOrDefault(itemId, 0);
         }
+        return getLiveAvailableItemQuantity(itemId);
+    }
+
+    private int getLiveAvailableItemQuantity(int itemId) {
         int quantity = Rs2Inventory.count(itemId);
         if (Rs2Equipment.isWearing(itemId)) {
             quantity++;

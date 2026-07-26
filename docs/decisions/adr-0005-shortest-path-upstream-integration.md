@@ -46,3 +46,6 @@ The initial pin is `e3dc7c5a621ca9cdd4c404ca4da5654b603286e7`
 - New catalog entries fail closed until their executor is implemented and tested.
 - Synchronization needs a lint/differential test suite and a small amount of
   adapter maintenance when the upstream schema changes.
+- Catalog requirements, collision-backed routing, and execution intents can be
+  validated without a login using the
+  [headless transport harness](../SHORTEST_PATH_TESTING.md).

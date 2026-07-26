@@ -7,5 +7,6 @@
 - [Runtime CLI](MICROBOT_CLI.md)
 - [Agent Server](AGENT_SERVER.md)
 - [Agentic Testing Loop](AGENTIC_TESTING_LOOP.md)
+- [Headless Shortest-Path Testing](SHORTEST_PATH_TESTING.md)
 - [Entity Guides](entity-guides/README.md)
 - [Gallery](gallery.md)
