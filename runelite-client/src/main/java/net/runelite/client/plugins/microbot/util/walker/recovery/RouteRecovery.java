@@ -84,7 +84,7 @@ public final class RouteRecovery {
         }
 
         int fallbackDistSq = euclideanSq(fallbackWp, playerLoc);
-        if (fallbackDistSq == targetEuclidean * targetEuclidean) {
+        if (fallbackDistSq <= targetEuclidean * targetEuclidean) {
             return fallbackWp;
         }
 

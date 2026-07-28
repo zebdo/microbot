@@ -103,6 +103,9 @@ public final class Rs2WalkerLifecycleRuntime {
         WorldPoint refreshTarget = ends != null && !ends.isEmpty() ? ends.iterator().next() : null;
         Rs2PathApi.getPathfinderConfig().refresh(refreshTarget);
         if (Rs2Player.isInCave()) {
+            // Cave pathfinding runs synchronously, so no Future represents the pathfinder installed below.
+            // Clear the cancelled asynchronous handle instead of leaving stale "work in flight" state.
+            Rs2PathApi.setPathfinderFuture(null);
             pathfinder = new Pathfinder(Rs2PathApi.getPathfinderConfig(), start, ends);
             pathfinder.run();
             try {

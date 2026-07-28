@@ -4510,6 +4510,9 @@ public class Rs2Walker {
         if (rockfall.kind() != ObstacleResolution.Kind.NOT_APPLICABLE) {
             return rockfall;
         }
+        if (reachableTilesCache == null) {
+            return ObstacleResolution.notApplicable();
+        }
 
         // (2) Reachable transport / agility-shortcut origin ahead: wide forward-window scan.
         WorldPoint shortcutOrigin = RouteRecovery.findReachableTransportOriginAhead(

@@ -1043,7 +1043,7 @@ public class Rs2WalkerUnitTest {
     @Test
     public void interpolateClickableTarget_usesInterpolatedPointWhenUsable() {
         WorldPoint player = new WorldPoint(3200, 3200, 0);
-        WorldPoint fallback = new WorldPoint(3206, 3200, 0);
+        WorldPoint fallback = new WorldPoint(3213, 3200, 0);
         List<WorldPoint> path = Arrays.asList(
                 new WorldPoint(3200, 3200, 0),
                 fallback,
@@ -1057,7 +1057,7 @@ public class Rs2WalkerUnitTest {
     @Test
     public void interpolateClickableTarget_fallsBackWhenInterpolatedPointUnusable() {
         WorldPoint player = new WorldPoint(3200, 3200, 0);
-        WorldPoint fallback = new WorldPoint(3206, 3200, 0);
+        WorldPoint fallback = new WorldPoint(3213, 3200, 0);
         List<WorldPoint> path = Arrays.asList(
                 new WorldPoint(3200, 3200, 0),
                 fallback,
