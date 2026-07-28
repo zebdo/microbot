@@ -1451,12 +1451,7 @@ public class Rs2Walker {
 
         final List<WorldPoint> rawPath = pathfinder.getPath();
         final List<WorldPoint> path = pathfinder.getWalkablePath();
-        if (path == null || path.isEmpty()) {
-            return WalkerState.MOVING;
-        }
-
-        WorldPoint dst = path.get(path.size() - 1);
-        if ((dst == null || dst.distanceTo(target) > distance) && path.size() <= 1) {
+        if (!walkStepPathReachesTarget(path, target, distance)) {
             setTarget(null, "rs2walker:walkStep:no-walkable-path");
             return WalkerState.UNREACHABLE;
         }
@@ -1471,6 +1466,21 @@ public class Rs2Walker {
         boolean allowDirectionalFallback = playerLoc.distanceTo(target) <= NORMAL_MINIMAP_REACH_EUCLIDEAN;
         clickMiniMapOrFallback(rawPath, target, playerLoc, NORMAL_MINIMAP_REACH_EUCLIDEAN - 1, allowDirectionalFallback, -1);
         return WalkerState.MOVING;
+    }
+
+    /**
+     * A completed pathfinder result is usable by {@link #walkStep(WorldPoint, int)} only when its
+     * endpoint reaches the requested arrival radius. A multi-tile partial path is still terminal for
+     * this non-blocking API: unlike {@link #processWalk}, walkStep has no partial-path retry loop, so
+     * accepting it would repeatedly click the same endpoint and report {@link WalkerState#MOVING}
+     * forever.
+     */
+    static boolean walkStepPathReachesTarget(List<WorldPoint> path, WorldPoint target, int distance) {
+        if (path == null || path.isEmpty() || target == null) {
+            return false;
+        }
+        WorldPoint endpoint = path.get(path.size() - 1);
+        return endpoint != null && endpoint.distanceTo(target) <= Math.max(0, distance);
     }
 
     /**
@@ -11578,4 +11588,3 @@ public class Rs2Walker {
         return sleepUntil(() -> !Rs2Widget.isWidgetVisible(InterfaceID.Worldmap.CLOSE), 3000);
     }
 }
-

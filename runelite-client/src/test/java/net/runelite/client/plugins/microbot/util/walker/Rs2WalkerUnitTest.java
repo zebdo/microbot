@@ -1410,6 +1410,37 @@ public class Rs2WalkerUnitTest {
     }
 
     @Test
+    public void walkStepPathReachesTarget_acceptsEndpointWithinArrivalDistance() {
+        WorldPoint goal = new WorldPoint(3304, 3336, 0);
+        List<WorldPoint> path = Arrays.asList(
+                new WorldPoint(3300, 3333, 0),
+                new WorldPoint(3303, 3336, 0));
+
+        assertTrue(Rs2Walker.walkStepPathReachesTarget(path, goal, 1));
+    }
+
+    @Test
+    public void walkStepPathReachesTarget_rejectsMultiTilePartialPath() {
+        WorldPoint goal = new WorldPoint(3304, 3336, 0);
+        List<WorldPoint> partialPath = Arrays.asList(
+                new WorldPoint(3200, 3200, 0),
+                new WorldPoint(3210, 3210, 0),
+                new WorldPoint(3220, 3220, 0));
+
+        assertFalse("a completed partial path must not leave walkStep reporting MOVING forever",
+                Rs2Walker.walkStepPathReachesTarget(partialPath, goal, 1));
+    }
+
+    @Test
+    public void walkStepPathReachesTarget_rejectsMissingPathOrEndpoint() {
+        WorldPoint goal = new WorldPoint(3304, 3336, 0);
+
+        assertFalse(Rs2Walker.walkStepPathReachesTarget(null, goal, 1));
+        assertFalse(Rs2Walker.walkStepPathReachesTarget(Collections.emptyList(), goal, 1));
+        assertFalse(Rs2Walker.walkStepPathReachesTarget(Collections.singletonList(null), goal, 1));
+    }
+
+    @Test
     public void shouldRunActiveRouteIdleNudge_waitsForImmediateTransport() {
         assertFalse(Rs2Walker.shouldRunActiveRouteIdleNudge(true, true));
         assertTrue(Rs2Walker.shouldRunActiveRouteIdleNudge(true, false));
