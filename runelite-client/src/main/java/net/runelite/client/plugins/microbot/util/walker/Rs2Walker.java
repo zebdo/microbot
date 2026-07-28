@@ -209,6 +209,13 @@ public class Rs2Walker {
      */
     private static final long ACTIVE_ROUTE_IDLE_NUDGE_MS = 1_200L;
 	private static final long ACTIVE_ROUTE_IDLE_NUDGE_COOLDOWN_MS = 2_000L;
+    /**
+     * How long after a door-recovery-suppressed tick the idle nudge stays disabled. Rolling — the suppress
+     * branch re-stamps it every tick the door stays unresolved, so the nudge is held off for the whole
+     * suppression episode plus this tail. Long enough to cover the door cooldowns that cause suppression;
+     * short enough that a genuinely abandoned door (player walked away, route replanned) frees the nudge.
+     */
+    private static final long DOOR_SUPPRESS_NUDGE_HOLDOFF_MS = 6_000L;
 	private static final long POST_TRANSPORT_PATH_TMARK_WINDOW_MS = 15_000L;
 	private static final int ROUTE_PROGRESS_FORWARD_SEARCH_TILES = 40;
 
@@ -325,6 +332,10 @@ public class Rs2Walker {
         routeState.lastTransportHandledAtLocation = null;
         routeState.lastTransportOriginLocation = null;
         routeState.lastTransportDestinationLocation = null;
+        // The interim target belongs to the PREVIOUS route's click; letting it survive into a fresh walk
+        // makes the new walk yield to (and report progress against) a stale objective — repeatedly seen as
+        // interim=<old goal> camping at Clock Tower when the script restarts walks every ~40s.
+        clearInterimTarget("walk-start");
         resetRouteProgress();
         synchronized (expectedTransportDestinations) {
             expectedTransportDestinations.clear();
@@ -1377,6 +1388,92 @@ public class Rs2Walker {
     }
 
     /**
+     * Non-blocking single-step walk. Unlike {@link #walkWithState(WorldPoint, int)} — which owns the
+     * loop and blocks (via {@link #processWalk}) until it arrives or gives up — this advances the walk by
+     * at most one action and returns immediately. The caller owns the loop: call it every tick and it
+     * paths toward {@code target}, one minimap click at a time, so between calls the caller can re-check
+     * its own condition (e.g. "is the NPC in range yet?") and act the instant it is.
+     *
+     * <p>Return values: {@link WalkerState#ARRIVED} when within {@code distance} of {@code target};
+     * {@link WalkerState#MOVING} while still approaching (path computing, in transit, or a click issued);
+     * {@link WalkerState#UNREACHABLE} when no walkable path reaches within {@code distance};
+     * {@link WalkerState#EXIT} on a bad call (null target / client thread / no config).
+     *
+     * <p>Scope: plain approach-walking. It reuses the shared pathfinder + minimap machinery but NOT the
+     * full {@link #processWalk} transport/door/stuck-recovery pipeline, so a route that needs a transport
+     * or a door won't be driven here — use the blocking {@link #walkTo} for those. Clear the goal with
+     * {@link #setTarget(WorldPoint, String) setTarget(null, reason)} when you stop (e.g. once you interact).
+     */
+    public static WalkerState walkStep(WorldPoint target, int distance) {
+        if (config == null) {
+            return WalkerState.EXIT;
+        }
+        if (target == null) {
+            log.warn("[Walker] walkStep rejected: null target");
+            return WalkerState.EXIT;
+        }
+        if (isClientThread()) {
+            log.warn("Please do not call the walker from the main thread");
+            return WalkerState.EXIT;
+        }
+
+        WorldPoint playerLoc = Rs2Player.getWorldLocation();
+        if (playerLoc == null) {
+            return WalkerState.MOVING;
+        }
+
+        // Arrived? (mirrors walkWithStateInternal's arrival test)
+        int distToTarget = playerLoc.distanceTo(target);
+        LocalPoint localTarget = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), target);
+        boolean walkableCheck = localTarget != null && Rs2Tile.isWalkable(localTarget);
+        boolean reachableTileCheck = distToTarget <= distance
+                && Rs2Tile.getReachableTilesFromTile(playerLoc, distance).containsKey(target);
+        if (reachableTileCheck || (!walkableCheck && distToTarget <= distance)) {
+            return WalkerState.ARRIVED;
+        }
+
+        // (Re)start pathfinding ONLY when the caller's goal changes. Do NOT re-target while the path is
+        // still computing — setTarget() restarts pathfinding, so re-calling it every tick would reset the
+        // pathfinder forever (path drawn, but never finished, so we never click).
+        if (currentTarget == null || !currentTarget.equals(target)) {
+            setTarget(target);
+            return WalkerState.MOVING;
+        }
+        Pathfinder pathfinder = Rs2PathApi.getPathfinder();
+        if (pathfinder == null || !pathfinder.isDone()) {
+            return WalkerState.MOVING; // path still computing — wait, don't reset it
+        }
+
+        // Already in transit toward the last click — let it resolve instead of spamming clicks.
+        if (Rs2Player.isMoving()) {
+            return WalkerState.MOVING;
+        }
+
+        final List<WorldPoint> rawPath = pathfinder.getPath();
+        final List<WorldPoint> path = pathfinder.getWalkablePath();
+        if (path == null || path.isEmpty()) {
+            return WalkerState.MOVING;
+        }
+
+        WorldPoint dst = path.get(path.size() - 1);
+        if ((dst == null || dst.distanceTo(target) > distance) && path.size() <= 1) {
+            setTarget(null, "rs2walker:walkStep:no-walkable-path");
+            return WalkerState.UNREACHABLE;
+        }
+
+        // One minimap click toward the target (falls back to the furthest visible path point off-clip).
+        // Click the target on the minimap, else fall back to the furthest visible planned-path point.
+        // The geometric directional fallback (a straight-line b-line toward the target) is gated to NEAR
+        // targets only: for a far target it's never right and produces off-route drift. When neither the
+        // target nor a planned-path point is clickable (e.g. the route needs a transport walkStep can't
+        // cross), no click is issued and we hold on the line rather than wander off it — walkStep is not
+        // built for transport routes; use the blocking walkTo/walkUntil for those.
+        boolean allowDirectionalFallback = playerLoc.distanceTo(target) <= NORMAL_MINIMAP_REACH_EUCLIDEAN;
+        clickMiniMapOrFallback(rawPath, target, playerLoc, NORMAL_MINIMAP_REACH_EUCLIDEAN - 1, allowDirectionalFallback, -1);
+        return WalkerState.MOVING;
+    }
+
+    /**
      * Core walk method contains all the logic to successfully walk to the destination
      * this contains doors, game objects, teleports, spells etc...
      *
@@ -2022,6 +2119,27 @@ public class Rs2Walker {
                             log.info("[Walker] local reachability miss near player; checking blockers/recovery: tile={} idx={}/{} player={} target={}",
                                     currentWorldPoint, i, path.size(), playerLoc, target);
 
+                            // Anti-end-camping frontier rewind. The near-player reachability check skips
+                            // far-away route tiles, so on a route whose tail folds back beside the player
+                            // (Clock Tower) the miss can fire on the GOAL (Euclidean-near, idx end) while the
+                            // REAL blocked frontier — the door tiles at mid-route — was silently skipped.
+                            // Recovery then camps on the end: door scans probe the wrong raw segment and the
+                            // recovery target anchors at the goal. Rewind to the EARLIEST unreachable route
+                            // tile: that is the first edge the walk actually cannot cross, which is where the
+                            // door (or other obstacle) really is. Every recovery path below exits the loop,
+                            // so rebinding i/currentWorldPoint here is contained.
+                            for (int fi = Math.max(0, indexOfStartPoint); fi < i; fi++) {
+                                WorldPoint ft = path.get(fi);
+                                if (ft != null && ft.getPlane() == currentPlayerPlane
+                                        && reachableTilesCache != null && !reachableTilesCache.containsKey(ft)) {
+                                    log.info("[Walker] frontier rewind: earliest blocked route tile idx={} tile={} (miss was idx={})",
+                                            fi, ft, i);
+                                    i = fi;
+                                    currentWorldPoint = ft;
+                                    break;
+                                }
+                            }
+
                             int edgeIdx = Math.max(indexOfStartPoint, i - 1);
                             int rawEdgeStart = (edgeIdx < smoothedToRaw.length) ? smoothedToRaw[edgeIdx] : 0;
                             int rawEdgeEnd = (i < smoothedToRaw.length) ? smoothedToRaw[i] + 1 : rawPath.size();
@@ -2146,6 +2264,36 @@ public class Rs2Walker {
                                 }
                             }
                             if (unresolvedDoorNearRawPath) {
+                                // An unresolved door sits on/near the blocked edge but every door handler above
+                                // declined (settling / recent-attempt cooldowns). Do NOT fall through to the
+                                // generic recovery click: it selects statically-walkable tiles PAST the closed
+                                // door (they are walkable on the map — the door is the only blocker), and the
+                                // server then paths the player AROUND the building, pulling the walk off-route
+                                // (Clock Tower: nudge past the door -> player circles outside -> recovery clicks
+                                // the unreachable end tile). Instead, close the distance to the door: walk to the
+                                // furthest REACHABLE route tile at/before the blocked edge — the reachability
+                                // gate means the target can never be beyond the closed door — so the player is
+                                // standing at the door when the cooldown expires and the handlers engage.
+                                routeState.doorRecoverySuppressedAtMs = System.currentTimeMillis();
+                                WorldPoint doorApproach = null;
+                                if (rawPath != null && !rawPath.isEmpty() && reachableTilesCache != null) {
+                                    int hi = Math.min(rawEdgeEnd, rawPath.size()) - 1;
+                                    for (int ri = hi; ri >= Math.max(0, rawEdgeStart); ri--) {
+                                        WorldPoint rt = rawPath.get(ri);
+                                        if (rt != null && reachableTilesCache.containsKey(rt)
+                                                && !rt.equals(playerLoc) && playerLoc.distanceTo2D(rt) > 1) {
+                                            doorApproach = rt;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (doorApproach != null && !Rs2Player.isMoving() && walkMiniMap(doorApproach)) {
+                                    routeState.lastUnreachableRecoveryClickAtMs = System.currentTimeMillis();
+                                    WebWalkLog.spInfo("door_suppressed_approach | to={} idx={} tile={}",
+                                            compactWorldPoint(doorApproach), rawEdgeStart, compactWorldPoint(currentWorldPoint));
+                                    exitReason = "door-suppressed-approach-click";
+                                    break;
+                                }
                                 WebWalkLog.spInfo("door_recovery_suppressed | reason=nearby-route-door idx={} tile={}",
                                         rawEdgeStart, compactWorldPoint(currentWorldPoint));
                                 exitReason = "door-recovery-suppressed";
@@ -2213,7 +2361,7 @@ public class Rs2Walker {
                                 recoverTarget = path.get(safeIdx);
                             }
                             int rawAnchorIndex = rawIndexForSmoothedIndex(recoverIdx, smoothedToRaw, rawPath);
-                            WorldPoint rawRecoveryTarget = inInstance ? null : findFurthestRawPathPointMatching(
+                            WorldPoint rawRecoveryTarget = inInstance ? null : findFurthestRawPathPointMatchingGated(
                                     rawPath,
                                     playerLoc,
                                     recoveryMinimapReach - 1,
@@ -2235,6 +2383,34 @@ public class Rs2Walker {
                                     && frontierObstacle.walkTarget() != null
                                     && !frontierObstacle.walkTarget().equals(playerLoc)) {
                                 recoverTarget = frontierObstacle.walkTarget();
+                            }
+                            // The recovery pass is LONG (door scans inside it interact and can walk the
+                            // player to a door). The recoverTarget above was computed from the state at pass
+                            // START — by click time the world may have moved on. Re-check the cheap guards
+                            // NOW: if a door interaction is settling or the player is mid-walk (e.g. walking
+                            // to the door the segment scan just clicked), a stale minimap click would CANCEL
+                            // that action and drag the player away ("gets to the door then backtracks").
+                            if (isDoorInteractionSettling() || Rs2Player.isMoving()) {
+                                exitReason = "recovery-click-preempted-by-action";
+                                break;
+                            }
+                            // End-snap guard: when the goal (or any recovery target) is Euclidean-NEAR but
+                            // absent from the local reachability BFS, a wall/door genuinely separates us —
+                            // within the recovery click radius an 18+-step BFS cannot miss a normally
+                            // connected tile. The old behavior clicked it anyway ("skip to the end point"),
+                            // parking the player against the wall. Replan from where we actually stand
+                            // instead: the fresh route starts from reality (through the doors), not from a
+                            // stale anchor.
+                            if (recoverTarget != null && reachableTilesCache != null && !reachableTilesCache.isEmpty()
+                                    && !reachableTilesCache.containsKey(recoverTarget)
+                                    && playerLoc.distanceTo2D(recoverTarget) <= WALLED_RECOVERY_TARGET_EUCLIDEAN
+                                    && System.currentTimeMillis() - lastWalledRecoveryReplanAtMs > WALLED_RECOVERY_REPLAN_COOLDOWN_MS) {
+                                lastWalledRecoveryReplanAtMs = System.currentTimeMillis();
+                                WebWalkLog.spInfo("recovery_target_walled | to={} player={} replanning",
+                                        compactWorldPoint(recoverTarget), compactWorldPoint(playerLoc));
+                                recalculatePath();
+                                exitReason = "recovery-target-walled-replan";
+                                break;
                             }
                             WorldPoint clickedRecoveryTarget = null;
                             if (recoverTarget != null && !recoverTarget.equals(playerLoc)) {
@@ -3067,6 +3243,17 @@ public class Rs2Walker {
 	private static long lastDoorFallbackAttemptAtMs = 0L;
 	private static long lastDoorLosAttemptAtMs = 0L;
 	private static long lastDoorPathAdjAttemptAtMs = 0L;
+    /**
+     * End-snap guard bounds: a recovery target within this Euclidean radius that is absent from the
+     * player-origin reachability BFS is walled/doored off (the recovery BFS's 18-step budget comfortably
+     * covers the full ~9-tile recovery click radius; a connected tile needing more steps than that inside
+     * this radius is a pathological fold where replanning is also the right answer), so recovery replans
+     * instead of clicking through the wall; the cooldown stops replans looping while the fresh path
+     * computes. Covers the whole recovery click range — Clock Tower showed goal-clicks from 9 tiles out.
+     */
+    private static final int WALLED_RECOVERY_TARGET_EUCLIDEAN = 9;
+    private static final long WALLED_RECOVERY_REPLAN_COOLDOWN_MS = 5_000L;
+    private static long lastWalledRecoveryReplanAtMs = 0L;
 
     static int computeStaminaThreshold(String playerName, long installSeed) {
         if (playerName == null || playerName.isEmpty()) {
@@ -3284,7 +3471,8 @@ public class Rs2Walker {
     }
 
     // findFurthestRawPathPointMatching (pure) moved to geometry/WalkerPathGeometry (P1); this game-coupled
-    // wrapper supplies the constant forward-search window and the lazy reachable-closest fallback.
+    // wrapper supplies the constant forward-search window and the lazy reachable-closest fallback. UNGATED —
+    // it is the pure-selection unit the tests exercise; live click paths use the gated variant below.
     static WorldPoint findFurthestRawPathPointMatching(List<WorldPoint> rawPath,
                                                        WorldPoint playerLoc,
                                                        int maxEuclidean,
@@ -3293,6 +3481,25 @@ public class Rs2Walker {
         return WalkerPathGeometry.findFurthestRawPathPointMatching(rawPath, playerLoc, maxEuclidean,
                 rawAnchorIndex, isCandidate, ROUTE_PROGRESS_FORWARD_SEARCH_TILES,
                 () -> getClosestTileIndex(rawPath, playerLoc));
+    }
+
+    /**
+     * Live-click variant of {@link #findFurthestRawPathPointMatching} with the route-blocked scan gate: it
+     * additionally supplies the player-origin reachability BFS so forward click selection stops at the near
+     * side of a closed door / wall ON the route instead of selecting statically-walkable tiles beyond it
+     * (which made the server path the player AROUND buildings — the Clock Tower off-route bug). Kept
+     * separate from the ungated wrapper because the gate reads live game state (the BFS), which the
+     * pure-selection unit tests must not depend on.
+     */
+    private static WorldPoint findFurthestRawPathPointMatchingGated(List<WorldPoint> rawPath,
+                                                                    WorldPoint playerLoc,
+                                                                    int maxEuclidean,
+                                                                    int rawAnchorIndex,
+                                                                    Predicate<WorldPoint> isCandidate) {
+        return WalkerPathGeometry.findFurthestRawPathPointMatching(rawPath, playerLoc, maxEuclidean,
+                rawAnchorIndex, isCandidate, ROUTE_PROGRESS_FORWARD_SEARCH_TILES,
+                () -> getClosestTileIndex(rawPath, playerLoc),
+                getClosestIndexReachableTiles(playerLoc), CLOSEST_INDEX_REACHABLE_STEP_BUDGET);
     }
 
     /**
@@ -3381,7 +3588,7 @@ public class Rs2Walker {
         // smoothed-waypoint Euclidean clamp after selection returned null on a stale anchor — not
         // from a lack of line of sight. Pending doors/gates are handled by
         // handlePendingDoorBeforeRouteClick, not by shortening the click.
-        WorldPoint forward = findFurthestRawPathPointMatching(rawPath, playerLoc, maxEuclidean,
+        WorldPoint forward = findFurthestRawPathPointMatchingGated(rawPath, playerLoc, maxEuclidean,
                 rawAnchorIndex, Rs2Walker::isKnownWalkableOrUnloaded);
         if (forward != null && !forward.equals(playerLoc)) {
             routeState.lastRouteClickTier = "route";
@@ -3449,7 +3656,7 @@ public class Rs2Walker {
             return null;
         }
 
-        return findFurthestRawPathPointMatching(rawPath, playerLoc, maxEuclidean, rawAnchorIndex,
+        return findFurthestRawPathPointMatchingGated(rawPath, playerLoc, maxEuclidean, rawAnchorIndex,
                 candidate -> !candidate.equals(playerLoc)
                         && isKnownWalkableOrUnloaded(candidate)
                         && isMiniMapClickable(candidate, 5));
@@ -3473,6 +3680,16 @@ public class Rs2Walker {
         if (playerLoc == null || Rs2Player.isMoving() || Rs2Player.isAnimating() || Rs2Player.isInteracting()
                 || Rs2LeaguesTransport.isTeleportInProgress()
                 || Rs2LeaguesTransport.isLeaguesAreaTeleportPending(LEAGUES_AREA_PENDING_STALL_MAX_AGE_MS)) {
+            routeState.idleNudgeLastObservedLocation = playerLoc;
+            routeState.idleNudgeStationarySinceMs = now;
+            return false;
+        }
+        // While door recovery is actively suppressed (unresolved door on the blocked edge, handlers cooling
+        // down), the nudge MUST NOT fire: its forward click is not door-aware and can select a tile on the
+        // far side of the closed door, which routes the player around the building and off the route. The
+        // suppress branch itself walks the player to the door's near side; standing there waiting for the
+        // cooldown is the correct behavior, not idleness to nudge out of.
+        if (now - routeState.doorRecoverySuppressedAtMs < DOOR_SUPPRESS_NUDGE_HOLDOFF_MS) {
             routeState.idleNudgeLastObservedLocation = playerLoc;
             routeState.idleNudgeStationarySinceMs = now;
             return false;
@@ -7645,16 +7862,19 @@ public class Rs2Walker {
 
     // 3-arg getClosestTileIndex (pure) moved to geometry/WalkerPathGeometry (P1)
 
+    /** Step budget of {@link #getClosestIndexReachableTiles}'s BFS; also the route-blocked scan gate's bound. */
+    private static final int CLOSEST_INDEX_REACHABLE_STEP_BUDGET = 20;
+
     private static HashMap<WorldPoint, Integer> getClosestIndexReachableTiles(WorldPoint playerLoc) {
         if (playerLoc == null) {
             return new HashMap<>();
         }
-        HashMap<WorldPoint, Integer> tiles = Rs2Tile.getReachableTilesFromTile(playerLoc, 20);
+        HashMap<WorldPoint, Integer> tiles = Rs2Tile.getReachableTilesFromTile(playerLoc, CLOSEST_INDEX_REACHABLE_STEP_BUDGET);
 
         // If an animation/shortcut puts the player on a collision-odd tile, keep route progress
         // anchored by distance instead of repeatedly recalculating an empty reachable set.
         if (tiles.isEmpty()) {
-            tiles = Rs2Tile.getReachableTilesFromTileIgnoreCollision(playerLoc, 20);
+            tiles = Rs2Tile.getReachableTilesFromTileIgnoreCollision(playerLoc, CLOSEST_INDEX_REACHABLE_STEP_BUDGET);
         }
         return tiles;
     }
