@@ -112,11 +112,7 @@ import static net.runelite.client.plugins.microbot.util.Global.*;
 public class Rs2Walker {
     @Setter
     public static ShortestPathConfig config;
-    static int stuckCount = 0;
-    static WorldPoint lastPosition;
-    static long lastMovedTimeMs = 0;
-    /** Rising-edge detection for {@link #checkIfStuck()} animation progress without tile delta. */
-    private static boolean prevAnimatingForStuckCheck = false;
+    // stuck/movement tracking state migrated to WalkerRouteState (see routeState)
     static volatile WorldPoint currentTarget;
     static int nextWalkingDistance = 10;
 
@@ -136,8 +132,6 @@ public class Rs2Walker {
 	 */
 	// interim-target state migrated to WalkerRouteState (see routeState)
 
-	/** Cooldown so partial-segment in-transit {@link #recalculatePath()} does not spam. */
-	private static volatile long lastPartialTransRecalcMs = 0L;
 	private static final long PARTIAL_TRANS_RECAL_COOLDOWN_MS = 3500L;
 
 	private static final int INTERIM_CLOSE_TILES = 5;
@@ -834,8 +828,8 @@ public class Rs2Walker {
         if (walkFastCanvas(pick)) {
             log.debug("[Walker] door nudge: canvas -> {} (goal={} dGoal={})", pick, goal, dGoal);
             waitUntilIdleAfterSceneWalk(goal, POST_SCENE_WALK_IDLE_WAIT_MS_MAX, goal, finishTh);
-            lastMovedTimeMs = System.currentTimeMillis();
-            stuckCount = 0;
+            routeState.lastMovedTimeMs = System.currentTimeMillis();
+            routeState.stuckCount = 0;
         }
     }
 
@@ -847,7 +841,7 @@ public class Rs2Walker {
                 target,
                 activeTarget,
                 routeState.interimTargetWp,
-                stuckCount,
+                routeState.stuckCount,
                 processWalkTail,
                 MAX_PROCESS_WALK_TAIL_ITERATIONS,
                 Thread.currentThread().isInterrupted(),
@@ -912,7 +906,7 @@ public class Rs2Walker {
     public static boolean disableTeleports = false;
 
     // Serializes stateful walker entry points so concurrent scripts don't corrupt
-    // stuckCount / lastPosition / lastMovedTimeMs / currentTarget / nextWalkingDistance.
+    // routeState.stuckCount / routeState.lastPosition / routeState.lastMovedTimeMs / currentTarget / nextWalkingDistance.
     // Reentrant: same-thread dispatch (walkWithState -> walkWithBankedTransportsAndState
     // -> walkWithStateInternal -> recursive processWalk) reacquires freely.
     // setTarget() stays unlocked — cross-thread cancel; volatile currentTarget read in the loop
@@ -1383,8 +1377,8 @@ public class Rs2Walker {
             currentTarget = target;
         }
         Rs2PathApi.setReachedDistance(distance);
-        stuckCount = 0;
-        lastMovedTimeMs = System.currentTimeMillis();
+        routeState.stuckCount = 0;
+        routeState.lastMovedTimeMs = System.currentTimeMillis();
 		routeState.interimTargetWp = null;
 		routeState.interimTargetIdx = -1;
 		routeState.interimSetAtMs = 0L;
@@ -1392,7 +1386,7 @@ public class Rs2Walker {
         routeState.interimLastBestPathIdx = -1;
         routeState.interimLastDistanceToTarget = Integer.MAX_VALUE;
         routeState.interimLastRetargetAtMs = 0L;
-        lastPartialTransRecalcMs = 0L;
+        routeState.lastPartialTransRecalcMs = 0L;
         routeState.idleNudgeLastObservedLocation = playerLocWalk;
         routeState.idleNudgeStationarySinceMs = System.currentTimeMillis();
         routeState.lastActiveRouteIdleNudgeAtMs = 0L;
@@ -1678,8 +1672,8 @@ public class Rs2Walker {
                             || (remainingSteps != Integer.MAX_VALUE && remainingSteps <= nearSegmentEndSteps);
                     if (approachingSegmentEnd && distToGoal > distance) {
                         long now = System.currentTimeMillis();
-                        if (now - lastPartialTransRecalcMs >= PARTIAL_TRANS_RECAL_COOLDOWN_MS) {
-                            lastPartialTransRecalcMs = now;
+                        if (now - routeState.lastPartialTransRecalcMs >= PARTIAL_TRANS_RECAL_COOLDOWN_MS) {
+                            routeState.lastPartialTransRecalcMs = now;
                             WebWalkLog.partialRecalc(
                                     remainingSteps == Integer.MAX_VALUE ? -1 : remainingSteps,
                                     distToDstSeg,
@@ -1709,7 +1703,7 @@ public class Rs2Walker {
             if (lastAttemptedMinimapClickOk && lastAttemptedMinimapClickAtMs > 0L
                     && !shouldIssueActiveRouteIdleNudge
                     && nowTickGraceMs - lastAttemptedMinimapClickAtMs < MINIMAP_CLICK_STALL_GRACE_MS) {
-                lastMovedTimeMs = nowTickGraceMs;
+                routeState.lastMovedTimeMs = nowTickGraceMs;
             }
 
             checkIfStuck();
@@ -1724,7 +1718,7 @@ public class Rs2Walker {
 				{
 					return WalkerState.MOVING;
 				}
-                long sinceMoved = System.currentTimeMillis() - lastMovedTimeMs;
+                long sinceMoved = System.currentTimeMillis() - routeState.lastMovedTimeMs;
                 long threshold = stallThresholdMs();
                 Telemetry.recordStallRecalc(sinceMoved, Rs2Player.getWorldLocation());
                 WebWalkLog.stallRecalc(sinceMoved, threshold,
@@ -1736,8 +1730,8 @@ public class Rs2Walker {
                             Math.max(0L, System.currentTimeMillis() - lastAttemptedMinimapClickAtMs),
                             routeState.interimTargetWp);
                 }
-                lastMovedTimeMs = System.currentTimeMillis();
-                stuckCount = 0;
+                routeState.lastMovedTimeMs = System.currentTimeMillis();
+                routeState.stuckCount = 0;
                 clearInterimTarget("stall-recalc");
                 if (immediateRouteTransportPending) {
                     WebWalkLog.spDebug("stall_recovery_suppressed | reason=immediate-route-transport idx={}", earlyRouteStartIdx);
@@ -1759,7 +1753,7 @@ public class Rs2Walker {
                 }
                 routeState.lastActiveRouteIdleNudgeAtMs = System.currentTimeMillis();
             }
-            if (stuckCount > 10) {
+            if (routeState.stuckCount > 10) {
                 var reachable = Rs2Tile.getReachableTilesFromTile(Rs2Player.getWorldLocation(), 5).keySet();
                 if (!reachable.isEmpty()) {
                     // Rank sidestep candidates by distance-toward-target so recovery
@@ -1769,11 +1763,11 @@ public class Rs2Walker {
                     List<WorldPoint> ranked = rankSidestepTilesToward(reachable, target);
                     int poolSize = Math.min(3, ranked.size());
                     WorldPoint sidestep = ranked.get(Rs2Random.between(0, poolSize));
-                    log.info("[Walker] stuck sidestep: clicked to={} player={} stuckCount={}",
-                            sidestep, Rs2Player.getWorldLocation(), stuckCount);
+                    log.info("[Walker] stuck sidestep: clicked to={} player={} routeState.stuckCount={}",
+                            sidestep, Rs2Player.getWorldLocation(), routeState.stuckCount);
                     walkMiniMap(sidestep);
                     sleepGaussian(1000, 300);
-                    stuckCount = 0;
+                    routeState.stuckCount = 0;
                 }
             }
 
@@ -1792,9 +1786,9 @@ public class Rs2Walker {
             }
             primeExpectedTransportDestinations(path, indexOfStartPoint);
 
-            lastPosition = playerLocForIndex;
-            boolean clearedInterimTarget = clearInterimTargetIfReachedOrExpired(lastPosition, path, System.currentTimeMillis());
-            WorldPoint plImmediate = lastPosition;
+            routeState.lastPosition = playerLocForIndex;
+            boolean clearedInterimTarget = clearInterimTargetIfReachedOrExpired(routeState.lastPosition, path, System.currentTimeMillis());
+            WorldPoint plImmediate = routeState.lastPosition;
 
             WorldPoint pathLastForImmediate = path.isEmpty() ? null : path.get(path.size() - 1);
             int immediateFinishTh = tightFinishThreshold(target, pathLastForImmediate, distance);
@@ -2450,14 +2444,14 @@ public class Rs2Walker {
                                             && isMovementWalkerOwned(System.currentTimeMillis(), lastAttemptedMinimapClickAtMs),
                                     reachableTilesCache != null ? reachableTilesCache.keySet() : null,
                                     WALLED_RECOVERY_TARGET_EUCLIDEAN,
-                                    System.currentTimeMillis(), lastWalledRecoveryReplanAtMs,
+                                    System.currentTimeMillis(), routeState.lastWalledRecoveryReplanAtMs,
                                     WALLED_RECOVERY_REPLAN_COOLDOWN_MS);
                             if (clickAction == RouteRecovery.RecoveryClickAction.YIELD_ACTION_IN_FLIGHT) {
                                 exitReason = "recovery-click-preempted-by-action";
                                 break;
                             }
                             if (clickAction == RouteRecovery.RecoveryClickAction.REPLAN_WALLED) {
-                                lastWalledRecoveryReplanAtMs = System.currentTimeMillis();
+                                routeState.lastWalledRecoveryReplanAtMs = System.currentTimeMillis();
                                 WebWalkLog.spInfo("recovery_target_walled | to={} player={} replanning",
                                         compactWorldPoint(recoverTarget), compactWorldPoint(playerLoc));
                                 recalculatePath();
@@ -2514,8 +2508,8 @@ public class Rs2Walker {
                                         finishThRecovery);
                                 // Next outer iteration runs checkIfStuck/isStuckTooLong before tile delta — avoid
                                 // spurious stall-recalc right after issuing recovery movement.
-                                lastMovedTimeMs = System.currentTimeMillis();
-                                stuckCount = 0;
+                                routeState.lastMovedTimeMs = System.currentTimeMillis();
+                                routeState.stuckCount = 0;
                                 exitReason = "local-recovery-click";
                                 break;
                             }
@@ -2586,8 +2580,8 @@ public class Rs2Walker {
                                 recordInterimDistanceProgress(interimFinal, posAfterWait, System.currentTimeMillis());
 								if ((posAfterWait != null && posBeforeWait.distanceTo2D(posAfterWait) > 0)
                                         || Rs2Player.isMoving()) {
-									lastMovedTimeMs = System.currentTimeMillis();
-									stuckCount = 0;
+									routeState.lastMovedTimeMs = System.currentTimeMillis();
+									routeState.stuckCount = 0;
 								}
                                 boolean closeEnoughForNextClick = posAfterWait != null
                                         && interimFinal.distanceTo2D(posAfterWait) <= INTERIM_CLOSE_TILES;
@@ -2667,7 +2661,7 @@ public class Rs2Walker {
 								routeState.interimLastProgressAtMs = nowMs;
 							}
 							boolean movingOrRecentlyMoved = Rs2Player.isMoving()
-									|| (lastMovedTimeMs > 0 && nowMs - lastMovedTimeMs < 1500);
+									|| (routeState.lastMovedTimeMs > 0 && nowMs - routeState.lastMovedTimeMs < 1500);
 							boolean makingRecentProgress = routeState.interimLastProgressAtMs > 0
 									&& nowMs - routeState.interimLastProgressAtMs < INTERIM_PROGRESS_TIMEOUT_MS;
 							boolean retargetCoolingDown = routeState.interimLastRetargetAtMs > 0
@@ -2825,10 +2819,10 @@ public class Rs2Walker {
                     }
                     // Keep stuck-detection honest: observed movement resets the movement timer.
                     // Without this, isStuckTooLong() fires after long successful walks because
-                    // lastMovedTimeMs is only refreshed at processWalk entry (not during the loop).
+                    // routeState.lastMovedTimeMs is only refreshed at processWalk entry (not during the loop).
                     if (posBefore.distanceTo2D(Rs2Player.getWorldLocation()) > 0) {
-                        lastMovedTimeMs = System.currentTimeMillis();
-                        stuckCount = 0;
+                        routeState.lastMovedTimeMs = System.currentTimeMillis();
+                        routeState.stuckCount = 0;
                     }
                     // If the minimap click failed (target outside minimap radius), subsequent
                     // path tiles are further away and will also fail — break and let the outer
@@ -2999,7 +2993,7 @@ public class Rs2Walker {
                     String deferReason = offPathDeferredReasonFromExit(exitReason);
                     long offPathWaitMs = offPathRecalcDeferredWaitMs(deferReason,
                             System.currentTimeMillis(),
-                            lastMovedTimeMs,
+                            routeState.lastMovedTimeMs,
                             routeState.routeProgressAdvancedAtMs,
                             lastAttemptedMinimapClickAtMs,
                             routeState.interimLastProgressAtMs);
@@ -3069,9 +3063,9 @@ public class Rs2Walker {
                 target,
                 currentTarget,
                 routeState.interimTargetWp,
-                stuckCount,
+                routeState.stuckCount,
                 Rs2Player.getWorldLocation());
-        WebWalkLog.tailExceeded(MAX_PROCESS_WALK_TAIL_ITERATIONS, target, currentTarget, routeState.interimTargetWp, stuckCount,
+        WebWalkLog.tailExceeded(MAX_PROCESS_WALK_TAIL_ITERATIONS, target, currentTarget, routeState.interimTargetWp, routeState.stuckCount,
                 Rs2Player.getWorldLocation());
         return WalkerState.EXIT;
     }
@@ -3307,7 +3301,6 @@ public class Rs2Walker {
      */
     private static final int WALLED_RECOVERY_TARGET_EUCLIDEAN = 9;
     private static final long WALLED_RECOVERY_REPLAN_COOLDOWN_MS = 5_000L;
-    private static long lastWalledRecoveryReplanAtMs = 0L;
 
     static int computeStaminaThreshold(String playerName, long installSeed) {
         if (playerName == null || playerName.isEmpty()) {
@@ -3900,11 +3893,11 @@ public class Rs2Walker {
         if ("active route idle nudge".equals(logLabel)) {
             routeState.lastActiveRouteIdleNudgeAtMs = routeState.interimSetAtMs;
         } else {
-            lastMovedTimeMs = routeState.interimSetAtMs;
+            routeState.lastMovedTimeMs = routeState.interimSetAtMs;
         }
         routeState.idleNudgeStationarySinceMs = routeState.interimSetAtMs;
         routeState.idleNudgeLastObservedLocation = playerLoc;
-        stuckCount = 0;
+        routeState.stuckCount = 0;
         return true;
     }
 
@@ -6195,8 +6188,8 @@ public class Rs2Walker {
         if (progressed) {
             WebWalkLog.tmark("door_edge_nudge", System.currentTimeMillis() - routeState.walkSessionStartedAtMs,
                     target, before, "from=" + compactWorldPoint(fromWp) + " to=" + compactWorldPoint(toWp));
-            lastMovedTimeMs = System.currentTimeMillis();
-            stuckCount = 0;
+            routeState.lastMovedTimeMs = System.currentTimeMillis();
+            routeState.stuckCount = 0;
         } else {
             WebWalkLog.spInfo("door_edge_nudge_unresolved | from={} to={} before={} after={}",
                     compactWorldPoint(fromWp), compactWorldPoint(toWp), compactWorldPoint(before), compactWorldPoint(after));
@@ -6376,7 +6369,7 @@ public class Rs2Walker {
                 routeState.interimSetAtMs,
                 routeState.interimLastProgressAtMs,
                 nowMs,
-                lastMovedTimeMs,
+                routeState.lastMovedTimeMs,
                 routeState.lastUnreachableRecoveryClickAtMs,
                 Rs2Player.isMoving());
     }
@@ -6401,7 +6394,7 @@ public class Rs2Walker {
                 routeState.interimSetAtMs,
                 routeState.interimLastProgressAtMs,
                 nowMs,
-                lastMovedTimeMs,
+                routeState.lastMovedTimeMs,
                 Rs2Player.isMoving(),
                 INTERIM_CLOSE_TILES);
     }
@@ -8158,8 +8151,8 @@ public class Rs2Walker {
     private static void recordRouteProgressAdvanced() {
         long now = System.currentTimeMillis();
         routeState.routeProgressAdvancedAtMs = now;
-        lastMovedTimeMs = now;
-        stuckCount = 0;
+        routeState.lastMovedTimeMs = now;
+        routeState.stuckCount = 0;
     }
 
     private static boolean isRecentTransportEdgeWindow() {
@@ -9859,7 +9852,7 @@ public class Rs2Walker {
         final WorldPoint loc = Rs2Player.getWorldLocation();
         if (loc == null) return true;
 
-        if (config.recalculateDistance() < 0 || lastPosition.equals(lastPosition = loc)) {
+        if (config.recalculateDistance() < 0 || routeState.lastPosition.equals(routeState.lastPosition = loc)) {
             return true;
         }
 
@@ -9964,7 +9957,7 @@ public class Rs2Walker {
                 isTransportInteractionSettling(),
                 routeState.interimTargetWp != null,
                 nowMs,
-                lastMovedTimeMs,
+                routeState.lastMovedTimeMs,
                 routeState.routeProgressAdvancedAtMs,
                 minimapClickAtMs,
                 routeState.interimLastProgressAtMs);
@@ -10042,29 +10035,29 @@ public class Rs2Walker {
     private static void checkIfStuck() {
         // Leagues pending teleports, dialogue, and fairy ring widget should not burn stall budget.
         if (Rs2WalkerStallPolicy.shouldSkipStallAccounting(LEAGUES_AREA_PENDING_STALL_MAX_AGE_MS)) {
-            lastMovedTimeMs = System.currentTimeMillis();
-            stuckCount = 0;
-            prevAnimatingForStuckCheck = Rs2Player.isAnimating();
+            routeState.lastMovedTimeMs = System.currentTimeMillis();
+            routeState.stuckCount = 0;
+            routeState.prevAnimatingForStuckCheck = Rs2Player.isAnimating();
             return;
         }
 
         WorldPoint now = Rs2Player.getWorldLocation();
         boolean anim = Rs2Player.isAnimating();
-        if (now != null && now.equals(lastPosition)) {
+        if (now != null && now.equals(routeState.lastPosition)) {
             boolean nearPath = isNearPath();
             boolean poseWalkingNearPath = Rs2Player.isMoving() && nearPath;
-            boolean animProgressNearPath = anim && !prevAnimatingForStuckCheck && nearPath;
+            boolean animProgressNearPath = anim && !routeState.prevAnimatingForStuckCheck && nearPath;
             if (animProgressNearPath || poseWalkingNearPath) {
-                lastMovedTimeMs = System.currentTimeMillis();
-                stuckCount = 0;
+                routeState.lastMovedTimeMs = System.currentTimeMillis();
+                routeState.stuckCount = 0;
             } else {
-                stuckCount++;
+                routeState.stuckCount++;
             }
         } else {
-            stuckCount = 0;
-            lastMovedTimeMs = System.currentTimeMillis();
+            routeState.stuckCount = 0;
+            routeState.lastMovedTimeMs = System.currentTimeMillis();
         }
-        prevAnimatingForStuckCheck = anim;
+        routeState.prevAnimatingForStuckCheck = anim;
     }
 
     // Base stall threshold. See stallThresholdMs() for activity-aware scaling.
@@ -10136,7 +10129,7 @@ public class Rs2Walker {
             return false;
         }
 
-        return lastMovedTimeMs > 0 && System.currentTimeMillis() - lastMovedTimeMs > stallThresholdMs();
+        return routeState.lastMovedTimeMs > 0 && System.currentTimeMillis() - routeState.lastMovedTimeMs > stallThresholdMs();
     }
 
     /**
