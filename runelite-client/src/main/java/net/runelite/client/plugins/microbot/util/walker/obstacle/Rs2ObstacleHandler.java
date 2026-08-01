@@ -67,6 +67,9 @@ public final class Rs2ObstacleHandler {
 
     /** Mines a Motherlode rockfall blocking {@code path[index]}/{@code path[index + 1]} if present. */
     public static RockfallResult handleRockfall(List<WorldPoint> path, int index) {
+        if (path == null || path.isEmpty() || index < 0 || index >= path.size()) {
+            return RockfallResult.NOT_APPLICABLE;
+        }
         if (Rs2PathApi.getPathfinder() == null) return RockfallResult.NOT_APPLICABLE;
 
         if (index == path.size() - 1) return RockfallResult.NOT_APPLICABLE;

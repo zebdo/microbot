@@ -147,6 +147,8 @@ public class BankedTransportItemPlanningTest {
                 .filter(t -> t.getCurrencyAmount() > 0)
                 .collect(Collectors.toList());
 
+        assertFalse("precondition: the data should contain currency-bearing plain transports",
+                currency.isEmpty());
         for (Transport t : currency) {
             assertTrue("currency transports must keep qualifying: " + describe(t),
                     Rs2WalkerBankingPlanner.planningCoversPlainTransport(t));

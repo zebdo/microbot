@@ -93,4 +93,15 @@ public class RouteRecoveryTest {
                 RouteRecovery.findReachableTransportOriginAhead(
                         path, 0, player, reachable, transportAt(origin), 1, 40));
     }
+
+    @Test
+    public void interpolationKeepsFallbackAlreadyInsideTargetRadius() {
+        WorldPoint player = wp(3200, 3200);
+        WorldPoint fallback = wp(3203, 3200);
+        List<WorldPoint> path = Arrays.asList(player, fallback, wp(3220, 3200));
+
+        assertEquals("an already-clickable fallback must not be pushed farther away",
+                fallback,
+                RouteRecovery.interpolateClickableTarget(path, 2, player, fallback, 5, point -> true));
+    }
 }

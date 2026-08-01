@@ -114,6 +114,11 @@ public class ObstacleRegistryTest {
                 registry.resolve(null, EMPTY_SCENE, NO_ACTIONS).kind());
     }
 
+    @Test(expected = NullPointerException.class)
+    public void walkToOriginRejectsNullTarget() {
+        ObstacleResolution.walkToOrigin(null);
+    }
+
     @Test
     public void plannedEdgeClassification() {
         assertTrue(new PlannedEdge(wp(1, 1), wp(1, 2)).adjacent());

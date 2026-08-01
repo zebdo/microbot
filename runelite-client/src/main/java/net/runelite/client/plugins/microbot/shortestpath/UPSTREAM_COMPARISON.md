@@ -48,7 +48,10 @@ Microbot loads 22 TSVs (see `Transport.java`). File-level diff vs `skretzo/maste
 - **Caveat:** imported members-area routes carry an empty `isMembers` (upstream lacked that column) — same as upstream's own behaviour; harmless since F2P can't reach those origins anyway.
 
 ### Recommended next Stage-4 target
-**#3 POH coverage** is the one concrete, real upstream gap: diff `skretzo/master:src/main/resources/transports/teleportation_portals_poh.tsv` against Microbot's programmatic POH set and backfill. It's data-level (low engine risk) and testable. *(Done 2026-07-20 — see the #3 row above.)*
+**Home-teleport coverage** is the next confirmed upstream data gap: compare upstream
+`teleportation_spells_home.tsv` (16 variants) with Microbot's two home-teleport rows and backfill only
+the missing, valid variants. #2 and #3 are complete, #11 is a stale premise, and #10/#12/#30 have no
+confirmed upstream implementation to backport.
 
 ---
 

@@ -4722,6 +4722,9 @@ public class Rs2Walker {
         if (rockfall.kind() != ObstacleResolution.Kind.NOT_APPLICABLE) {
             return rockfall;
         }
+        if (reachableTilesCache == null) {
+            return ObstacleResolution.notApplicable();
+        }
 
         int playerRawIdx = getClosestTileIndex(rawPath, playerLoc);
 
