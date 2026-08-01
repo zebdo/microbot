@@ -1516,6 +1516,44 @@ public class Rs2Walker {
         return WalkerState.MOVING;
     }
 
+    /** Wall-clock ms of the last walker heartbeat line. */
+    private static volatile long lastHeartbeatAtMs = 0L;
+    /** Minimum gap between heartbeat lines — one per second is enough to size a stall. */
+    private static final long WALKER_HEARTBEAT_INTERVAL_MS = 1_000L;
+
+    /**
+     * One throttled line per processWalk pass, so a silent stretch in the log can be told apart from a
+     * stalled one.
+     * <p>
+     * Two ten-second freezes before the same ladder were diagnosed twice from the log alone and both
+     * diagnoses were wrong — the scene-walk idle wait (its instrumentation never fired) and the interim
+     * target (it clears at 5 tiles and the player was 2 away). The reason both were guesses is that
+     * nothing logs in that window at all: the post_transport_* tmarks stop 15s after a transport, and
+     * everything else in the walk is event-driven. A heartbeat settles the question outright — if these
+     * lines appear across the gap the loop is spinning without acting and the state here says why, and
+     * if they stop the thread is blocked inside a wait and the last line says which pass entered it.
+     */
+    private static void walkerHeartbeat(WorldPoint target, int processWalkTail) {
+        long now = System.currentTimeMillis();
+        if (now - lastHeartbeatAtMs < WALKER_HEARTBEAT_INTERVAL_MS) {
+            return;
+        }
+        lastHeartbeatAtMs = now;
+        WorldPoint playerLoc = Rs2Player.getWorldLocation();
+        // DEBUG, not INFO: this fires every second for the whole of every walk, and it exists to
+        // diagnose stalls, not to narrate healthy ones. Behind the verbose toggle it costs nothing
+        // until someone is actually chasing a silent stretch in the log.
+        WebWalkLog.spDebug("walker_heartbeat | tail={} at={} goal={} moving={} animating={} interim={} interimAgeMs={} sinceMovedMs={} sinceDoorSettleMs={}",
+                processWalkTail,
+                compactWorldPoint(playerLoc), compactWorldPoint(target),
+                Rs2Player.isMoving(), Rs2Player.isAnimating(),
+                compactWorldPoint(routeState.interimTargetWp),
+                routeState.interimSetAtMs > 0L ? now - routeState.interimSetAtMs : -1L,
+                routeState.lastMovedTimeMs > 0L ? now - routeState.lastMovedTimeMs : -1L,
+                routeState.doorInteractionSettleStartedAtMs > 0L
+                        ? now - routeState.doorInteractionSettleStartedAtMs : -1L);
+    }
+
     /**
      * A completed pathfinder result is usable by {@link #walkStep(WorldPoint, int)} only when its
      * endpoint reaches the requested arrival radius. A multi-tile partial path is still terminal for
@@ -1586,6 +1624,7 @@ public class Rs2Walker {
         Map<WorldPoint, Integer> reachableTilesCache = null;
         WorldPoint reachableTilesCacheOrigin = null;
         for (int processWalkTail = 0; processWalkTail < MAX_PROCESS_WALK_TAIL_ITERATIONS; processWalkTail++) {
+        walkerHeartbeat(target, processWalkTail);
         try {
             walkerDiag("tail iteration begin idx=%d/%d target=%s current=%s interim=%s partialRetries=%d",
                     processWalkTail,
