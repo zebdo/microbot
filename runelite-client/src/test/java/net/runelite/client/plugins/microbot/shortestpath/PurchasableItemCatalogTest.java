@@ -95,4 +95,22 @@ public class PurchasableItemCatalogTest {
                 matchedGated > 0 && matchedFree > 0);
         assertNull(PurchasableItemCatalog.forTransport(null));
     }
+
+    @Test
+    public void currencyTwinMustMatchBothFareFields() {
+        assertNotNull("the exact Shantay fare must match",
+                PurchasableItemCatalog.forTransport(currencyTransport("5 Coins")));
+        assertNull("a different amount must not match merely because the vendor is nearby",
+                PurchasableItemCatalog.forTransport(currencyTransport("6 Coins")));
+        assertNull("a different currency must not match merely because the amount and vendor are nearby",
+                PurchasableItemCatalog.forTransport(currencyTransport("5 Ecto-token")));
+    }
+
+    private static Transport currencyTransport(String fare) {
+        HashMap<String, String> fields = new HashMap<>();
+        fields.put("Origin", "3304 3117 0");
+        fields.put("Destination", "3304 3115 0");
+        fields.put("Currency", fare);
+        return new Transport(fields, TransportType.TRANSPORT);
+    }
 }

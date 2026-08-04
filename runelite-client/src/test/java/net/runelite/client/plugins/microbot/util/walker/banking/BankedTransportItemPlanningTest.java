@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -136,8 +137,8 @@ public class BankedTransportItemPlanningTest {
         java.util.Map<Integer, Integer> map =
                 Rs2WalkerBankingPlanner.getMissingTransportItemIdsWithQuantities(java.util.List.of(ticketRow));
 
-        assertTrue("the fare must enter the withdrawal map",
-                map.getOrDefault(net.runelite.api.gameval.ItemID.COINS, 0) >= 5);
+        assertEquals("the planner must withdraw exactly one 5-coin fare",
+                5, map.getOrDefault(net.runelite.api.gameval.ItemID.COINS, 0).intValue());
         assertFalse("the unbankable ticket itself must not be requested",
                 map.containsKey(1854));
     }

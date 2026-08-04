@@ -668,7 +668,7 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
             return;
         }
         LiveCollisionConflicts.Tally tally = LiveCollisionConflicts.tally(snapshot, staticCollisionData);
-        if (tally.isEmpty()) {
+        if (tally.isEmpty() && tally.liveOpensSealed == 0) {
             return;
         }
         lastCollisionConflictLogAtMs = now;

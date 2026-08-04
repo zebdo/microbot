@@ -38,7 +38,7 @@ public final class LiveCollisionConflicts {
             this.liveOpensSealed = liveOpensSealed;
         }
 
-        /** True when nothing INTERPRETABLE was found; the sealed bucket alone is not worth logging. */
+        /** True when neither regular conflict bucket has entries; sealed openings are tracked separately. */
         public boolean isEmpty() {
             return liveOpensStatic == 0 && liveBlocksStatic == 0;
         }

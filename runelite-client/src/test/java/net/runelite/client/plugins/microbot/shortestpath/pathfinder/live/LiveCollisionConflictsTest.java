@@ -87,7 +87,8 @@ public class LiveCollisionConflictsTest {
      * The first live data set was ~44k "conflicts" in EVERY scene — about two planes' worth — because a
      * floorless upper plane has no static data, SplitFlagMap.get returns false for it (reads as solid
      * wall), and the live scene's empty collision flags read as open. That noise must land in the sealed
-     * bucket, leaving the interpretable counts at zero so the log line is suppressed entirely.
+     * bucket, leaving the regular interpretable counts at zero while preserving the sealed count for
+     * its dedicated telemetry field.
      */
     @Test
     public void floorlessUpperPlaneNoiseIsBucketedSeparately() {
@@ -107,7 +108,7 @@ public class LiveCollisionConflictsTest {
         LiveCollisionConflicts.Tally tally = LiveCollisionConflicts.tally(snapshot, staticMap);
         assertEquals("no-data tiles must not inflate the real conflict count", 0, tally.liveOpensStatic);
         assertEquals(1, tally.liveOpensSealed);
-        assertTrue("a sealed-only tally is noise, so nothing gets logged", tally.isEmpty());
+        assertTrue("sealed-only openings stay out of the regular conflict buckets", tally.isEmpty());
     }
 
     @Test

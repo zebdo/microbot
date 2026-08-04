@@ -21,6 +21,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.magic.RuneFilter;
+import net.runelite.client.plugins.microbot.util.magic.Runes;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.leaguetransport.Rs2LeaguesTransport;
 import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
@@ -602,6 +603,7 @@ public class PathfinderConfig {
             }
         }
         relevantItemIds.addAll(HARDCODED_USABILITY_ITEM_IDS);
+        addSpellRuneItemIds(relevantItemIds);
         // Resolve currency to ids HERE, once, rather than comparing item names during fingerprinting —
         // reading an item's name loads its composition on the client thread. An unresolvable currency
         // disables the narrowing rather than losing that currency's invalidation.
@@ -753,6 +755,12 @@ public class PathfinderConfig {
                 .forEach(e -> WebWalkLog.cfg("refresh_transports type {} cnt={} passed={} timeMs={}",
                         e.getKey(), e.getValue()[0], e.getValue()[1], e.getValue()[2] / 1000));
 
+    }
+
+    static void addSpellRuneItemIds(Set<Integer> relevantItemIds) {
+        Arrays.stream(Runes.values())
+                .map(Runes::getItemId)
+                .forEach(relevantItemIds::add);
     }
 
     public boolean isBlockedTransportEdge(int originPacked, int destinationPacked) {

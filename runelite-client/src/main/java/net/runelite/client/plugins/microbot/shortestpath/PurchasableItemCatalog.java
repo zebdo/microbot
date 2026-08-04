@@ -107,7 +107,10 @@ public final class PurchasableItemCatalog {
             if (!item.vendorNear(transport.getOrigin())) {
                 continue;
             }
-            if (currencyTwin || requiresItem(transport, item.itemId)) {
+            boolean matchingCurrencyTwin = currencyTwin
+                    && transport.getCurrencyAmount() == item.costAmount
+                    && item.costCurrencyName.equalsIgnoreCase(transport.getCurrencyName());
+            if (requiresItem(transport, item.itemId) || matchingCurrencyTwin) {
                 return item;
             }
         }

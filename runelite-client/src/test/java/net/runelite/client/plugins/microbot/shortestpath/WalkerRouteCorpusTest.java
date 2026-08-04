@@ -162,6 +162,7 @@ public class WalkerRouteCorpusTest {
         // partial (endpoint far from the goal), never fabricate an arrival.
         WorldPoint cove = new WorldPoint(3044, 2870, 0);
         List<WorldPoint> path = route(configWith(WalkerRouteCorpusTest::unrestricted), LUMBRIDGE, cove);
+        assertTrue("the cove route must return an honest partial path", path != null && !path.isEmpty());
         assertFalse("the cove must not be reachable", arrives(path, cove, 40));
     }
 

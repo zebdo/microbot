@@ -5,6 +5,7 @@ import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
 import net.runelite.client.plugins.microbot.shortestpath.TransportVarPlayer;
 import net.runelite.client.plugins.microbot.shortestpath.TransportVarbit;
+import net.runelite.client.plugins.microbot.util.magic.Runes;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -234,6 +235,17 @@ public class PathfinderConfigTransportRefreshHashTest {
     public void currencyAffectsUsabilityByResolvedId() {
         assertTrue(PathfinderConfig.itemAffectsTransportUsability(
                 net.runelite.api.gameval.ItemID.COINS, RELEVANT_IDS));
+    }
+
+    @Test
+    public void everySpellRuneAffectsTransportUsability() {
+        Set<Integer> relevantIds = new HashSet<>();
+        PathfinderConfig.addSpellRuneItemIds(relevantIds);
+
+        for (Runes rune : Runes.values()) {
+            assertTrue(rune + " must invalidate teleport-spell usability",
+                    PathfinderConfig.itemAffectsTransportUsability(rune.getItemId(), relevantIds));
+        }
     }
 
     /** Null set — sets not built yet, or a currency that would not resolve — must fingerprint all. */

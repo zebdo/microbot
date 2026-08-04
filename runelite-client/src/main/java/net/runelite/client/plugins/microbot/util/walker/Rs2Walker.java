@@ -9356,7 +9356,7 @@ public class Rs2Walker {
             sleepUntil(() -> Rs2Inventory.hasItem(purchasable.itemId), 4000);
         }
         if (!Rs2Inventory.hasItem(purchasable.itemId)) {
-            WebWalkLog.spWarn("purchasable_buy failed | item={} vendor={} — no item after {} attempt",
+            WebWalkLog.spWarn("purchasable_buy failed | item={} vendor={} action={} — no item acquired",
                     purchasable.itemId, purchasable.vendorNpcId, purchasable.vendorAction);
         }
     }
@@ -9544,6 +9544,9 @@ public class Rs2Walker {
                     rawPath, ri, playerLoc, RAW_TRANSPORT_DISPATCH_MAX_DISTANCE)) {
                 if (handleTransports(rawPath, ri)) {
                     return true;
+                }
+                if (hasExplicitTransportStep(rawPath, ri)) {
+                    sawUndispatchedTransportStep = true;
                 }
                 continue;
             }

@@ -226,9 +226,10 @@ public final class Rs2WalkerBankingPlanner {
                                 .orElse(null);
                         int currencyItemId = purchasable == null ? -1 : getCurrencyItemId(purchasable.costCurrencyName);
                         if (currencyItemId > 0) {
-                            // One fare per required item, not one fare total — a step needing two
-                            // passes was withdrawing enough to buy one.
-                            int fare = purchasable.costAmount * requiredQuantity;
+                            // One fare per required ITEM. requiredQuantity above is a currency
+                            // amount for currency-based rows, so it must not be used as a count.
+                            int itemsNeeded = isCurrencyBasedTransport(transport.getType()) ? 1 : requiredQuantity;
+                            int fare = purchasable.costAmount * itemsNeeded;
                             itemQuantityMap.merge(currencyItemId, fare, Integer::sum);
                             log.debug("Transport item {} not banked but purchasable — withdrawing fare {} x{} instead",
                                     purchasable.itemId, purchasable.costCurrencyName, fare);
