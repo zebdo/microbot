@@ -19,6 +19,10 @@ public class ShortestPathCoreTest {
 	private static final WorldPoint AL_KHARID_GATE_WEST_NORTH = new WorldPoint(3267, 3228, 0);
 	private static final WorldPoint AL_KHARID_GATE_EAST_SOUTH = new WorldPoint(3268, 3227, 0);
 	private static final WorldPoint AL_KHARID_GATE_EAST_NORTH = new WorldPoint(3268, 3228, 0);
+	private static final int AL_KHARID_MINE_MIN_X = 3281;
+	private static final int AL_KHARID_MINE_MAX_X = 3300;
+	private static final int AL_KHARID_MINE_MIN_Y = 3151;
+	private static final int AL_KHARID_MINE_MAX_Y = 3178;
 
 	@BeforeClass
 	public static void loadCollisionMap() {
@@ -242,6 +246,71 @@ public class ShortestPathCoreTest {
 				config.isBlockedTransportStep(
 						WorldPointUtil.packWorldPoint(AL_KHARID_GATE_WEST_NORTH),
 						WorldPointUtil.packWorldPoint(AL_KHARID_GATE_EAST_NORTH)));
+	}
+
+	@Test
+	public void testAlKharidMinePerimeterBlocksBothDirections() {
+		PathfinderConfig config = createMinimalConfig();
+
+		for (int x = AL_KHARID_MINE_MIN_X; x <= AL_KHARID_MINE_MAX_X; x++) {
+			assertBlockedBothDirections(config,
+					new WorldPoint(x, AL_KHARID_MINE_MIN_Y, 0),
+					new WorldPoint(x, AL_KHARID_MINE_MIN_Y - 1, 0));
+			assertBlockedBothDirections(config,
+					new WorldPoint(x, AL_KHARID_MINE_MAX_Y, 0),
+					new WorldPoint(x, AL_KHARID_MINE_MAX_Y + 1, 0));
+		}
+
+		for (int y = AL_KHARID_MINE_MIN_Y; y <= AL_KHARID_MINE_MAX_Y; y++) {
+			assertBlockedBothDirections(config,
+					new WorldPoint(AL_KHARID_MINE_MIN_X, y, 0),
+					new WorldPoint(AL_KHARID_MINE_MIN_X - 1, y, 0));
+			assertBlockedBothDirections(config,
+					new WorldPoint(AL_KHARID_MINE_MAX_X, y, 0),
+					new WorldPoint(AL_KHARID_MINE_MAX_X + 1, y, 0));
+		}
+	}
+
+	@Test
+	public void testPathfinderRoutesAroundAlKharidMine() {
+		WorldPoint start = new WorldPoint(AL_KHARID_MINE_MIN_X - 1, 3164, 0);
+		WorldPoint target = new WorldPoint(AL_KHARID_MINE_MAX_X + 5, 3164, 0);
+		Pathfinder pathfinder = new Pathfinder(createMinimalConfig(), start, target);
+
+		pathfinder.run();
+
+		List<WorldPoint> path = pathfinder.getPath();
+		assertTrue("Route around Al Kharid mine should complete", pathfinder.isDone());
+		assertFalse("Route around Al Kharid mine should not be empty", path.isEmpty());
+		assertEquals("Route should reach the target", target, path.get(path.size() - 1));
+		assertFalse("Route must not enter the open pit",
+				path.stream().anyMatch(ShortestPathCoreTest::isInsideAlKharidMine));
+	}
+
+	@Test
+	public void shantaySouthboundOffersBothTicketAndCoinVariants() {
+		// Southbound through the Shantay Pass must be plannable BOTH when already holding a ticket
+		// (item 1854) and when merely holding 5 coins (Shantay sells passes at the gate; the walker's
+		// ensureShantayPassBeforeGate buys one before interacting). Without the coin variant, a player
+		// without a ticket gets a several-hundred-tile detour around the desert. Also guards against
+		// the duplicate origin/destination rows being deduplicated away at load.
+		HashMap<WorldPoint, Set<Transport>> transports = Transport.loadAllFromResources();
+		WorldPoint origin = new WorldPoint(3304, 3117, 0);
+		Set<Transport> atGate = transports.get(origin);
+		assertNotNull("no transports loaded at the Shantay gate origin", atGate);
+		boolean hasTicketVariant = false;
+		boolean hasCoinVariant = false;
+		for (Transport t : atGate) {
+			if (t.getObjectId() != 4031) continue;
+			if (t.getDestination() == null || t.getDestination().getY() >= origin.getY()) continue;
+			if (t.getItemIdRequirements() != null && !t.getItemIdRequirements().isEmpty()) {
+				hasTicketVariant = true;
+			} else if (t.getCurrencyAmount() == 5 && "Coins".equalsIgnoreCase(t.getCurrencyName())) {
+				hasCoinVariant = true;
+			}
+		}
+		assertTrue("southbound Shantay must keep the ticket-gated variant", hasTicketVariant);
+		assertTrue("southbound Shantay must offer the 5-coin buy-at-gate variant", hasCoinVariant);
 	}
 
 	@Test
@@ -838,6 +907,23 @@ public class ShortestPathCoreTest {
 
 	private static boolean isEitherDirection(WorldPoint from, WorldPoint to, WorldPoint a, WorldPoint b) {
 		return (from.equals(a) && to.equals(b)) || (from.equals(b) && to.equals(a));
+	}
+
+	private static void assertBlockedBothDirections(PathfinderConfig config, WorldPoint a, WorldPoint b) {
+		int packedA = WorldPointUtil.packWorldPoint(a);
+		int packedB = WorldPointUtil.packWorldPoint(b);
+		assertTrue("Expected blocked edge " + a + " -> " + b,
+				config.isBlockedTransportStep(packedA, packedB));
+		assertTrue("Expected blocked edge " + b + " -> " + a,
+				config.isBlockedTransportStep(packedB, packedA));
+	}
+
+	private static boolean isInsideAlKharidMine(WorldPoint point) {
+		return point.getPlane() == 0
+				&& point.getX() >= AL_KHARID_MINE_MIN_X
+				&& point.getX() <= AL_KHARID_MINE_MAX_X
+				&& point.getY() >= AL_KHARID_MINE_MIN_Y
+				&& point.getY() <= AL_KHARID_MINE_MAX_Y;
 	}
 
 	private static boolean hasFenceCrossing(List<WorldPoint> path, int minX, int maxX, int northY, int southY, int plane) {

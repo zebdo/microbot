@@ -21,6 +21,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.magic.RuneFilter;
+import net.runelite.client.plugins.microbot.util.magic.Runes;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.leaguetransport.Rs2LeaguesTransport;
 import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
@@ -111,6 +112,19 @@ public class PathfinderConfig {
     private final Set<Long> learnedBlockedEdgeKeys = ConcurrentHashMap.newKeySet();
     /** Backing file for {@link #learnedBlockedEdgeKeys}; redirectable for tests. */
     private volatile File learnedBlockedEdgesFile;
+    /**
+     * Two-strike hardening state: every row of the learned store (probation included), in file order,
+     * plus a by-key index for strike accounting. {@link #learnedBlockedEdgeKeys} holds only what is
+     * ENFORCED this session (confirmed rows + this session's own observations). Guarded by
+     * {@link #learnedEdgeLock}.
+     */
+    private final List<LearnedBlockedEdges.Edge> learnedEdgeRows = new ArrayList<>();
+    private final Map<Long, LearnedBlockedEdges.Edge> learnedEdgeRowsByKey = new HashMap<>();
+    private final Object learnedEdgeLock = new Object();
+    /** Observations needed before a learned block survives into LATER sessions. */
+    static final int LEARNED_EDGE_ENFORCE_STRIKES = 2;
+    /** A repeat observation only counts as independent evidence after this long. */
+    static final long LEARNED_EDGE_STRIKE_INDEPENDENCE_MS = 10 * 60_000L;
 
     private final Client client;
     private final ShortestPathConfig config;
@@ -199,13 +213,48 @@ public class PathfinderConfig {
     private Set<Integer> refreshAvailableItemIds;
     private int[] refreshBoostedLevels;
     private Map<String, int[]> refreshCurrencyCache;
+    // Varplayer values snapshot for the current refreshTransports pass. Without it, every varp
+    // condition on every transport paid a full cross-thread hop (getLiveVarplayerValue), and the
+    // global state cache never retains zero-valued varps — ~115 varp-gated rows accounted for
+    // ~2.3s of the 2.8s refilter. Captured in the same client-thread block as boosted levels.
+    private Map<Integer, Integer> refreshVarplayerValues;
     private static final Skill[] SKILLS = Skill.values();
 
     /**
-     * Memo of last {@link #refreshTransports} result when {@link #computeTransportRefreshCacheKeyHash} and
-     * verification (boosted skills + transport varbits/varplayers) match. Cleared by {@link #invalidateTransportRefreshCache()}.
+     * Memo of recent {@link #refreshTransports} results, keyed by {@link #computeTransportRefreshCacheKeyHash}
+     * and guarded by the verification hash (boosted skills + transport varbits/varplayers). BOUNDED and
+     * multi-entry: the banked-walk compare alternates between two config states (bank-leg vs direct), so a
+     * single-slot memo missed on EVERY flip and each miss was a full ~2.5s re-filter of all 12k transports —
+     * four in a row per banked walk start. A tiny LRU keeps both states (plus a couple more) warm.
+     * Cleared by {@link #invalidateTransportRefreshCache()}.
      */
-    private volatile TransportRefreshSnapshot transportRefreshSnapshot;
+    private static final int TRANSPORT_REFRESH_SNAPSHOT_CACHE_SIZE = 4;
+
+    /**
+     * Item ids and currency names that some transport or restriction actually gates on. Only these may
+     * participate in the transport-refresh cache key — see
+     * {@link #itemAffectsTransportUsability(int, String, Set, Set)}. Null until the first refresh has
+     * run, which makes the fingerprint fall back to hashing everything.
+     */
+    private volatile Set<Integer> transportRelevantItemIds = null;
+
+    /**
+     * The item ids usability depends on that are NOT declared on any transport row: the fairy-ring
+     * staves and the Chronicle are checked against hardcoded ids, so they must be seeded explicitly or
+     * picking one up would not invalidate the cache.
+     */
+    private static final Set<Integer> HARDCODED_USABILITY_ITEM_IDS = Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList(
+                    ItemID.DRAMEN_STAFF,
+                    ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF,
+                    ItemID.CHRONICLE)));
+    private final Map<Integer, TransportRefreshSnapshot> transportRefreshSnapshots =
+            Collections.synchronizedMap(new java.util.LinkedHashMap<Integer, TransportRefreshSnapshot>(8, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<Integer, TransportRefreshSnapshot> eldest) {
+                    return size() > TRANSPORT_REFRESH_SNAPSHOT_CACHE_SIZE;
+                }
+            });
 
     public PathfinderConfig(SplitFlagMap mapData, Map<WorldPoint, Set<Transport>> transports,
                             List<Restriction> restrictions,
@@ -416,8 +465,8 @@ public class PathfinderConfig {
         final Rs2LeaguesTransport.LeaguesContext leaguesCtx = Rs2LeaguesTransport.leaguesContext();
         final int refreshCacheKeyHash = computeTransportRefreshCacheKeyHash(target, leaguesCtx);
 
-        TransportRefreshSnapshot snap = transportRefreshSnapshot;
-        if (snap != null && snap.cacheKeyHash == refreshCacheKeyHash && client != null) {
+        TransportRefreshSnapshot snap = transportRefreshSnapshots.get(refreshCacheKeyHash);
+        if (snap != null && client != null) {
             int[] boostedProbe = new int[SKILLS.length];
             final int[] probeOrdinals = snap.sortedSkillOrdinals;
             Microbot.getClientThread().runOnClientThreadOptional(() -> {
@@ -464,13 +513,13 @@ public class PathfinderConfig {
         // walker blocks on. Attribute it: "key" means the cache key changed (items/coins/toggles),
         // "verify" means items were identical but game state moved (skills/varbits/varplayers/quests).
         // invFp vs prevInvFp isolates the common case of spending coins on a fare or toll.
-        String cacheMissReason = transportRefreshSnapshot == null
+        String cacheMissReason = transportRefreshSnapshots.isEmpty()
                 ? "no_snapshot"
-                : (transportRefreshSnapshot.cacheKeyHash != refreshCacheKeyHash ? "key" : "verify");
+                : (snap == null ? "key" : "verify");
         WebWalkLog.cfgSlow("refresh_transports cache_miss reason={} key={} prevKey={} invFp={} prevInvFp={} invChanged={}{}",
                 cacheMissReason,
                 refreshCacheKeyHash,
-                transportRefreshSnapshot == null ? 0 : transportRefreshSnapshot.cacheKeyHash,
+                snap == null ? 0 : snap.cacheKeyHash,
                 lastComputedInvFingerprint,
                 previousRefreshInvFingerprint,
                 lastComputedInvFingerprint != previousRefreshInvFingerprint,
@@ -507,6 +556,10 @@ public class PathfinderConfig {
         // requirement). Only these may participate in the verification hash — otherwise hitpoints
         // regenerating invalidates the whole transport cache.
         Set<Integer> requiredSkillOrdinals = new HashSet<>();
+        // Item ids / currency names some transport or restriction gates on — everything else is
+        // excluded from the cache key so ordinary inventory churn stops forcing a cold start.
+        Set<Integer> relevantItemIds = new HashSet<>();
+        Set<String> relevantCurrencyNames = new HashSet<>();
         for (Set<Transport> ts : mergedList.values()) {
             for (Transport t : ts) {
                 t.getVarbits().forEach(v -> {
@@ -525,10 +578,52 @@ public class PathfinderConfig {
                         }
                     }
                 }
+                if (t.getItemIdRequirements() != null) {
+                    t.getItemIdRequirements().stream()
+                            .filter(Objects::nonNull)
+                            .forEach(relevantItemIds::addAll);
+                }
+                if (t.getCurrencyAmount() > 0 && t.getCurrencyName() != null && !t.getCurrencyName().isEmpty()) {
+                    relevantCurrencyNames.add(t.getCurrencyName());
+                }
             }
         }
+        // Restrictions gate on items too (hasRequiredItems(Restriction)), from their own list.
+        for (List<Restriction> group : Arrays.asList(resourceRestrictions, customRestrictions)) {
+            if (group == null) {
+                continue;
+            }
+            for (Restriction r : group) {
+                if (r == null || r.getItemIdRequirements() == null) {
+                    continue;
+                }
+                r.getItemIdRequirements().stream()
+                        .filter(Objects::nonNull)
+                        .forEach(relevantItemIds::addAll);
+            }
+        }
+        relevantItemIds.addAll(HARDCODED_USABILITY_ITEM_IDS);
+        addSpellRuneItemIds(relevantItemIds);
+        // Resolve currency to ids HERE, once, rather than comparing item names during fingerprinting —
+        // reading an item's name loads its composition on the client thread. An unresolvable currency
+        // disables the narrowing rather than losing that currency's invalidation.
+        boolean allCurrenciesResolved = true;
+        for (String currency : relevantCurrencyNames) {
+            int id = currencyItemId(currency);
+            if (id > 0) {
+                relevantItemIds.add(id);
+            } else {
+                log.warn("[Walker] transport currency '{}' has no known item id — transport-refresh cache "
+                        + "key falls back to fingerprinting every item", currency);
+                allCurrenciesResolved = false;
+            }
+        }
+        transportRelevantItemIds = allCurrenciesResolved
+                ? Collections.unmodifiableSet(relevantItemIds)
+                : null;
 
         refreshBoostedLevels = new int[SKILLS.length];
+        Map<Integer, Integer> varplayerValues = new HashMap<>();
         Microbot.getClientThread().runOnClientThreadOptional(() -> {
             for (int i = 0; i < SKILLS.length; i++) {
                 refreshBoostedLevels[i] = client.getBoostedSkillLevel(SKILLS[i]);
@@ -536,11 +631,14 @@ public class PathfinderConfig {
             for (int id : varbitIds) {
                 Microbot.getVarbitValue(id);
             }
+            // Read varps directly into the refresh snapshot: the global cache drops zero values,
+            // so pre-warming through it never helped the zero-valued ones.
             for (int id : varplayerIds) {
-                Microbot.getVarbitPlayerValue(id);
+                varplayerValues.put(id, client.getVarpValue(id));
             }
             return true;
         });
+        refreshVarplayerValues = varplayerValues;
         long cacheTime = System.currentTimeMillis() - cacheStart;
 
         long filterStart = System.currentTimeMillis();
@@ -616,10 +714,10 @@ public class PathfinderConfig {
                 sortedVarbitConditions, sortedVarplayerConditions, sortedQuestIds);
         int[] verificationComponents = computeTransportRefreshVerificationComponents(refreshBoostedLevels,
                 sortedSkillOrdinals, sortedVarbitConditions, sortedVarplayerConditions, sortedQuestIds);
-        transportRefreshSnapshot = TransportRefreshSnapshot.capture(
+        transportRefreshSnapshots.put(refreshCacheKeyHash, TransportRefreshSnapshot.capture(
                 refreshCacheKeyHash, verificationHash, verificationComponents,
                 sortedSkillOrdinals, sortedVarbitConditions, sortedVarplayerConditions, sortedQuestIds,
-                transports, usableTeleports);
+                transports, usableTeleports));
 
         long similarStart = System.currentTimeMillis();
         if (useBankItems && config.maxSimilarTransportDistance() > 0) {
@@ -630,6 +728,7 @@ public class PathfinderConfig {
         refreshAvailableItemIds = null;
         refreshBoostedLevels = null;
         refreshCurrencyCache = null;
+        refreshVarplayerValues = null;
 
         // varbit/varplayer counts = distinct ids referenced by merged transport definitions this refresh, not total client var space.
         WebWalkLog.cfg("refresh_transports merge={}ms cache={}ms filter={}ms useTrans={}ms similar={}ms total/chk={}/{} usablePost={} vb={} vp={}",
@@ -656,6 +755,12 @@ public class PathfinderConfig {
                 .forEach(e -> WebWalkLog.cfg("refresh_transports type {} cnt={} passed={} timeMs={}",
                         e.getKey(), e.getValue()[0], e.getValue()[1], e.getValue()[2] / 1000));
 
+    }
+
+    static void addSpellRuneItemIds(Set<Integer> relevantItemIds) {
+        Arrays.stream(Runes.values())
+                .map(Runes::getItemId)
+                .forEach(relevantItemIds::add);
     }
 
     public boolean isBlockedTransportEdge(int originPacked, int destinationPacked) {
@@ -708,38 +813,63 @@ public class PathfinderConfig {
     }
 
     /**
-     * Loads the human-editable learned-blocked-edges TSV into {@link #learnedBlockedEdgeKeys} and applies
-     * it to the live block set. Idempotent — both sets de-duplicate — so a redirect-and-reload in tests
-     * is safe.
+     * (Re)loads the human-editable learned-blocked-edges TSV. Only rows with
+     * {@link #LEARNED_EDGE_ENFORCE_STRIKES}+ strikes are applied to the live block set — a
+     * single-strike row is probation: the session that observed it blocked it at the time, but a
+     * fresh session ignores it until a second independent observation confirms (one bad sample must
+     * not poison the store permanently). A reload drops previously-applied learned keys first so the
+     * test seam can simulate a restart; static blocked edges are re-added and unaffected.
      */
     private void loadLearnedBlockedEdges() {
-        for (LearnedBlockedEdges.Edge edge : LearnedBlockedEdges.load(learnedBlockedEdgesFile)) {
-            long key = transportEdgeKey(
-                    WorldPointUtil.packWorldPoint(edge.origin),
-                    WorldPointUtil.packWorldPoint(edge.destination));
-            learnedBlockedEdgeKeys.add(key);
-            blockedTransportEdgesPacked.add(key);
-            if (edge.bidirectional) {
-                long reverse = transportEdgeKey(
-                        WorldPointUtil.packWorldPoint(edge.destination),
-                        WorldPointUtil.packWorldPoint(edge.origin));
-                learnedBlockedEdgeKeys.add(reverse);
-                blockedTransportEdgesPacked.add(reverse);
+        synchronized (learnedEdgeLock) {
+            blockedTransportEdgesPacked.removeAll(learnedBlockedEdgeKeys);
+            addStaticBlockedEdges();
+            learnedBlockedEdgeKeys.clear();
+            learnedEdgeRows.clear();
+            learnedEdgeRowsByKey.clear();
+            for (LearnedBlockedEdges.Edge edge : LearnedBlockedEdges.load(learnedBlockedEdgesFile)) {
+                long key = transportEdgeKey(
+                        WorldPointUtil.packWorldPoint(edge.origin),
+                        WorldPointUtil.packWorldPoint(edge.destination));
+                learnedEdgeRows.add(edge);
+                learnedEdgeRowsByKey.put(key, edge);
+                boolean enforced = edge.strikes >= LEARNED_EDGE_ENFORCE_STRIKES;
+                if (enforced) {
+                    learnedBlockedEdgeKeys.add(key);
+                    blockedTransportEdgesPacked.add(key);
+                } else {
+                    log.debug("[Walker] Learned edge on probation (strike {}/{}), not enforced: {} -> {}",
+                            edge.strikes, LEARNED_EDGE_ENFORCE_STRIKES, edge.origin, edge.destination);
+                }
+                if (edge.bidirectional) {
+                    long reverse = transportEdgeKey(
+                            WorldPointUtil.packWorldPoint(edge.destination),
+                            WorldPointUtil.packWorldPoint(edge.origin));
+                    learnedEdgeRowsByKey.putIfAbsent(reverse, edge);
+                    if (enforced) {
+                        learnedBlockedEdgeKeys.add(reverse);
+                        blockedTransportEdgesPacked.add(reverse);
+                    }
+                }
             }
         }
     }
 
     /**
      * Records a walking edge the walker just failed to traverse (e.g. a door that moved the player the
-     * wrong way) as a permanent block: it is applied to the live pathfinder set immediately and appended
-     * to the human-editable learned-blocked-edges TSV so it survives restarts and transport refreshes.
+     * wrong way). The observing session blocks the edge immediately — it just watched the failure, and
+     * anything less loops the walker into the same door. PERSISTENCE is two-strike gated: the row is
+     * written on probation (strike 1) and later sessions ignore it until a second observation at least
+     * {@link #LEARNED_EDGE_STRIKE_INDEPENDENCE_MS} later confirms it. One bad sample (the Wydin door
+     * poisoning) therefore self-heals on restart instead of requiring a hand-edit.
      *
      * <p>Only the attempted direction is blocked — not bidirectionally — so a genuinely one-way door
      * stays usable the other way. Callers must only pass <em>stable</em> map properties here; temporary,
      * quest/skill-gated doors are handled by {@code restrictions.tsv} and must not be learned, or the
      * bot would avoid them forever after the requirement is met.
      *
-     * @return {@code true} if this edge was newly learned; {@code false} if it was already known.
+     * @return {@code true} if this edge was newly blocked for this session; {@code false} if it was
+     * already enforced.
      */
     public boolean learnBlockedEdge(WorldPoint origin, WorldPoint destination, String reason) {
         if (origin == null || destination == null) {
@@ -752,10 +882,36 @@ public class PathfinderConfig {
             return false;
         }
         blockedTransportEdgesPacked.add(key);
-        LearnedBlockedEdges.append(learnedBlockedEdgesFile,
-                new LearnedBlockedEdges.Edge(origin, destination, false, reason == null ? "" : reason));
-        log.info("[Walker] Learned blocked edge {} -> {} ({}); persisted to {}",
-                origin, destination, reason, learnedBlockedEdgesFile);
+        long now = System.currentTimeMillis();
+        synchronized (learnedEdgeLock) {
+            LearnedBlockedEdges.Edge existing = learnedEdgeRowsByKey.get(key);
+            if (existing == null) {
+                LearnedBlockedEdges.Edge row = new LearnedBlockedEdges.Edge(
+                        origin, destination, false, reason == null ? "" : reason, 1, now);
+                learnedEdgeRows.add(row);
+                learnedEdgeRowsByKey.put(key, row);
+                LearnedBlockedEdges.append(learnedBlockedEdgesFile, row);
+                log.info("[Walker] Learned blocked edge {} -> {} ({}) — strike 1/{}: blocked this session, "
+                                + "enforced across sessions only after independent confirmation; {}",
+                        origin, destination, reason, LEARNED_EDGE_ENFORCE_STRIKES, learnedBlockedEdgesFile);
+            } else if (existing.strikes < LEARNED_EDGE_ENFORCE_STRIKES
+                    && now - existing.lastStrikeAtMs > LEARNED_EDGE_STRIKE_INDEPENDENCE_MS) {
+                LearnedBlockedEdges.Edge confirmed = existing.withStrikeAt(now);
+                int idx = learnedEdgeRows.indexOf(existing);
+                if (idx >= 0) {
+                    learnedEdgeRows.set(idx, confirmed);
+                }
+                learnedEdgeRowsByKey.put(key, confirmed);
+                LearnedBlockedEdges.save(learnedBlockedEdgesFile, learnedEdgeRows);
+                log.info("[Walker] Learned blocked edge {} -> {} ({}) — strike {}/{}: persistently enforced",
+                        origin, destination, reason, confirmed.strikes, LEARNED_EDGE_ENFORCE_STRIKES);
+            } else {
+                // Probation row re-observed within the independence window (e.g. a rapid client
+                // restart into the same stuck spot): session block stands, persistence unchanged.
+                log.debug("[Walker] Learned blocked edge {} -> {} re-observed within the independence "
+                        + "window; probation unchanged", origin, destination);
+            }
+        }
         return true;
     }
 
@@ -919,11 +1075,11 @@ public class PathfinderConfig {
     }
 
     /**
-     * Drop {@link #transportRefreshSnapshot} so the next {@link #refresh(WorldPoint)} rebuilds transport maps
+     * Drop the transport-refresh snapshot cache so the next {@link #refresh(WorldPoint)} rebuilds transport maps
      * (inventory/quest/varbit changes that are not captured by the memo key, script-driven transport mutations, etc.).
      */
     public void invalidateTransportRefreshCache() {
-        transportRefreshSnapshot = null;
+        transportRefreshSnapshots.clear();
     }
 
     /**
@@ -1067,7 +1223,19 @@ public class PathfinderConfig {
     private boolean varplayerChecks(Transport transport) {
         return transport.getVarplayers().isEmpty() ||
                 transport.getVarplayers().stream()
-                        .allMatch(varplayerCheck -> varplayerCheck.matches(getLiveVarplayerValue(varplayerCheck.getVarplayerId())));
+                        .allMatch(varplayerCheck -> varplayerCheck.matches(getVarplayerValue(varplayerCheck.getVarplayerId())));
+    }
+
+    /** Refresh-scoped snapshot first (no cross-thread hop); live read only outside a refresh pass. */
+    private int getVarplayerValue(int varplayerId) {
+        Map<Integer, Integer> snapshot = refreshVarplayerValues;
+        if (snapshot != null) {
+            Integer value = snapshot.get(varplayerId);
+            if (value != null) {
+                return value;
+            }
+        }
+        return getLiveVarplayerValue(varplayerId);
     }
 
     private int getLiveVarplayerValue(int varplayerId) {
@@ -1781,18 +1949,72 @@ public class PathfinderConfig {
         return bits;
     }
 
+    /**
+     * Items no transport can possibly gate on must not participate in the cache key — the same
+     * argument already applied to skills above.
+     * <p>
+     * Hashing EVERY item meant any inventory, equipment or bank change minted a new key, and a new key
+     * is a full re-evaluation of ~5,700 transports. Measured over a questing session: 0 cache hits, 22
+     * misses, every one of them {@code invChanged=true}. Quests are the pathological case because they
+     * churn the inventory constantly AND walk after nearly every step, so they paid the ~2.3s cold
+     * start (7.8s worst) on almost every walk. A fishing script churns items too but walks once a trip,
+     * so it only ate it occasionally — which is why this looked like a questing bug.
+     * <p>
+     * Usability depends on item state in exactly four places, all enumerated into the relevant sets by
+     * {@link #collectTransportRelevantItemState}: transport {@code itemIdRequirements}, restriction
+     * {@code itemIdRequirements}, the hardcoded fairy-ring staves and Chronicle, and currency — which
+     * is matched by NAME, not id, so ids alone would silently stop coin changes invalidating the
+     * cache and leave a stale "you can afford this" verdict.
+     *
+     * Deliberately takes an ITEM ID only. An earlier version also compared {@code item.getName()}
+     * against the currency names, which was a client-thread stall in disguise: {@link
+     * net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel#getName()} lazily loads the item
+     * composition through {@code runOnClientThread}, so fingerprinting a full bank fired hundreds of
+     * client-thread round-trips per cache-key computation and every other script's queued task timed
+     * out at once. Currency is resolved to ids at collection time instead — see
+     * {@link #currencyItemId(String)} — so this stays pure arithmetic.
+     */
+    static boolean itemAffectsTransportUsability(int itemId, Set<Integer> relevantItemIds) {
+        // Null set = not built yet, or a currency we could not resolve: fingerprint everything, which
+        // is exactly the old behaviour and never under-invalidates.
+        return relevantItemIds == null || relevantItemIds.contains(itemId);
+    }
+
+    /**
+     * Currency name to item id, mirroring the banking planner's resolver. Returns -1 for anything
+     * unknown, which disables the narrowing entirely rather than silently dropping that currency's
+     * invalidation.
+     */
+    private static int currencyItemId(String currencyName) {
+        if (currencyName == null || currencyName.trim().isEmpty()) {
+            return -1;
+        }
+        switch (currencyName.trim().toLowerCase()) {
+            case "coins":
+                return ItemID.COINS;
+            case "ecto-token":
+                return ItemID.ECTOTOKEN;
+            default:
+                return -1;
+        }
+    }
+
     private int fingerprintInventoryEquipmentBank() {
+        final Set<Integer> ids = transportRelevantItemIds;
         final int[] h = {1};
         Rs2Inventory.items().forEach(item -> {
+            if (!itemAffectsTransportUsability(item.getId(), ids)) return;
             h[0] = 31 * h[0] + item.getId();
             h[0] = 31 * h[0] + item.getQuantity();
         });
         Rs2Equipment.all().forEach(item -> {
+            if (!itemAffectsTransportUsability(item.getId(), ids)) return;
             h[0] = 31 * h[0] + item.getId();
             h[0] = 31 * h[0] + item.getQuantity();
         });
         if (useBankItems) {
             Rs2Bank.getAll().forEach(item -> {
+                if (!itemAffectsTransportUsability(item.getId(), ids)) return;
                 h[0] = 31 * h[0] + item.getId();
                 h[0] = 31 * h[0] + item.getQuantity();
             });

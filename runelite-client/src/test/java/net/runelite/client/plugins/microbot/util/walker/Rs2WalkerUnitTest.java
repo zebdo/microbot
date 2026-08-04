@@ -998,13 +998,44 @@ public class Rs2WalkerUnitTest {
         long now = 10_000L;
 
         assertEquals("door-settling", Rs2Walker.offPathRecalcDeferralReason(
-                true, false, false, true, false, false,
+                true, false, false, true, true, false, false,
                 now, 0L, 0L, 0L, 0L));
         assertEquals("transport-settling", Rs2Walker.offPathRecalcDeferralReason(
-                true, false, false, false, true, false,
+                true, false, false, true, false, true, false,
                 now, 0L, 0L, 0L, 0L));
         assertEquals("moving", Rs2Walker.offPathRecalcDeferralReason(
-                true, false, false, false, false, false,
+                true, false, false, true, false, false, false,
+                now, 0L, 0L, 0L, 0L));
+    }
+
+    /**
+     * The Gu'Tanoth rogue drift: ogre combat dragged the player a tile per second for 27s.
+     * Moving stayed true with no walker click in flight, "moving" deferred the off-path recalc
+     * every pass, and the walker was fully passive until the script gave up. Busy state without
+     * walker-owned movement must NOT defer — the recalc fires and replans from the drift position.
+     */
+    @Test
+    public void offPathRecalcDeferralReason_unownedBusyStateDoesNotDefer() {
+        long now = 10_000L;
+
+        assertEquals(null, Rs2Walker.offPathRecalcDeferralReason(
+                true, false, false, false, false, false, false,
+                now, 0L, 0L, 0L, 0L));
+        assertEquals(null, Rs2Walker.offPathRecalcDeferralReason(
+                false, true, false, false, false, false, false,
+                now, 0L, 0L, 0L, 0L));
+        assertEquals(null, Rs2Walker.offPathRecalcDeferralReason(
+                false, false, true, false, false, false, false,
+                now, 0L, 0L, 0L, 0L));
+        // The drift refreshes lastMovedAtMs every tick — "recent-movement" must not defer
+        // unowned movement either, or the tile-per-second creep re-arms it forever.
+        assertEquals(null, Rs2Walker.offPathRecalcDeferralReason(
+                true, false, false, false, false, false, false,
+                now, 9_900L, 0L, 0L, 0L));
+        // Settle windows are walker-owned by construction (bounded, set on our own interaction)
+        // and keep deferring regardless of the ownership flag.
+        assertEquals("door-settling", Rs2Walker.offPathRecalcDeferralReason(
+                true, false, false, false, true, false, false,
                 now, 0L, 0L, 0L, 0L));
     }
 
@@ -1013,13 +1044,13 @@ public class Rs2WalkerUnitTest {
         long now = 10_000L;
 
         assertEquals("route-progress", Rs2Walker.offPathRecalcDeferralReason(
-                false, false, false, false, false, false,
+                false, false, false, false, false, false, false,
                 now, 0L, 8_000L, 0L, 0L));
         assertEquals("recent-click", Rs2Walker.offPathRecalcDeferralReason(
-                false, false, false, false, false, false,
+                false, false, false, false, false, false, false,
                 now, 0L, 0L, 8_000L, 0L));
         assertEquals("interim-progress", Rs2Walker.offPathRecalcDeferralReason(
-                false, false, false, false, false, true,
+                false, false, false, false, false, false, true,
                 now, 0L, 0L, 0L, 8_000L));
     }
 
@@ -1028,8 +1059,94 @@ public class Rs2WalkerUnitTest {
         long now = 10_000L;
 
         assertEquals(null, Rs2Walker.offPathRecalcDeferralReason(
-                false, false, false, false, false, false,
+                false, false, false, true, false, false, false,
                 now, 7_000L, 6_000L, 7_000L, 7_000L));
+    }
+
+    /**
+     * A target &le;100 chebyshev used to skip the bank compare outright, so a purchasable gate
+     * 30 straight-line tiles away (Shantay: ~700 by inventory-only path) never got its fare
+     * withdrawn — the walker silently took the detour. The ceiling decides when "close" is a lie.
+     */
+    @Test
+    public void shortWalkDirectPathCeiling_flagsGateDetours() {
+        assertTrue("the Shantay detour (700 tiles for a 30-tile hop) must escalate to the bank compare",
+                700 > Rs2Walker.shortWalkDirectPathCeiling(30));
+        assertTrue("an honest town wiggle (150 tiles for an 80-tile hop) must stay direct",
+                150 <= Rs2Walker.shortWalkDirectPathCeiling(80));
+        assertEquals("tiny distances keep a floor so building detours don't trip it",
+                60, Rs2Walker.shortWalkDirectPathCeiling(5));
+        assertEquals(300, Rs2Walker.shortWalkDirectPathCeiling(100));
+    }
+
+    /**
+     * A guarded door replies with a conversation instead of opening; re-clicking it cancels that menu,
+     * so whatever answers dialogue never gets a menu that survives long enough to act on and the walk
+     * livelocks at the door. The walker holds off while a menu is up — but the hold-off must be
+     * BOUNDED, or a plain walk with no dialogue logic behind it would stall forever on any stray
+     * conversation.
+     */
+    /**
+     * Ranged obstacle dispatch: click the stairs/door from where we stand and let the SERVER walk us,
+     * instead of walking to an approach tile we guessed at. The guess is what failed at the Black
+     * Knights' ladder, the Falador staircase and the guarded door — never the interaction.
+     * <p>
+     * The contract that must not slip is ROUTE ORDER: a further obstacle may never be actioned before
+     * the one in front of the player.
+     */
+    @Test
+    public void shouldDispatchTransportAtRange_decisionTable() {
+        int near = 2;
+        int far = 13;
+
+        // Legacy band is untouched — always dispatchable, whatever else is true.
+        assertTrue("standing on the origin still dispatches",
+                Rs2Walker.shouldDispatchTransportAtRange(0, near, far,
+                        false, false, true, true, true, false));
+        assertTrue(Rs2Walker.shouldDispatchTransportAtRange(2, near, far,
+                false, false, true, true, true, false));
+
+        // The new band.
+        assertTrue("first obstacle, object transport, in range — click it from here",
+                Rs2Walker.shouldDispatchTransportAtRange(7, near, far,
+                        true, true, false, false, false, true));
+        assertFalse("route order: something unresolved is closer",
+                Rs2Walker.shouldDispatchTransportAtRange(7, near, far,
+                        false, true, false, false, false, true));
+        assertFalse("dialogue/widget transports gain nothing and must not fire early",
+                Rs2Walker.shouldDispatchTransportAtRange(7, near, far,
+                        true, false, false, false, false, true));
+        assertFalse("beyond the scan's reach",
+                Rs2Walker.shouldDispatchTransportAtRange(14, near, far,
+                        true, true, false, false, false, true));
+        assertFalse("instances keep the legacy band — raw coords make 'on route' unreliable",
+                Rs2Walker.shouldDispatchTransportAtRange(7, near, far,
+                        true, true, true, false, false, true));
+        assertFalse("never interrupt a settle window",
+                Rs2Walker.shouldDispatchTransportAtRange(7, near, far,
+                        true, true, false, true, false, true));
+        assertFalse("the server declined this edge before — walk onto the origin instead",
+                Rs2Walker.shouldDispatchTransportAtRange(7, near, far,
+                        true, true, false, false, true, true));
+        assertFalse("kill switch off restores the old behaviour exactly",
+                Rs2Walker.shouldDispatchTransportAtRange(7, near, far,
+                        true, true, false, false, false, false));
+        assertFalse("a negative distance (different plane) never dispatches",
+                Rs2Walker.shouldDispatchTransportAtRange(-1, near, far,
+                        true, true, false, false, false, true));
+    }
+
+    @Test
+    public void doorDialogueDeferActive_holdsOffButAlwaysReleases() {
+        long max = 5_000L;
+        assertTrue("hold off while the menu is fresh",
+                Rs2Walker.doorDialogueDeferActive(10_000L, 10_500L, max));
+        assertTrue("still holding just inside the bound",
+                Rs2Walker.doorDialogueDeferActive(10_000L, 14_999L, max));
+        assertFalse("nothing answered it — resume clicking rather than stall the walk",
+                Rs2Walker.doorDialogueDeferActive(10_000L, 15_000L, max));
+        assertFalse("no hold-off recorded means no deferral",
+                Rs2Walker.doorDialogueDeferActive(0L, 99_999L, max));
     }
 
     @Test
@@ -1277,6 +1394,46 @@ public class Rs2WalkerUnitTest {
                 1_000L,
                 4_500L,
                 5_000L));
+    }
+
+    /**
+     * The player has walked well past its closest approach, so the checkpoint is abandoned even though
+     * progress was recorded a moment ago — route-index advance renews that timestamp every pass, which
+     * is exactly how a dead interim survived to its 10s cap while a transport dispatch waited on it.
+     */
+    @Test
+    public void shouldClearInterimTarget_movingAwayFromCheckpoint_returnsTrue() {
+        assertTrue(Rs2Walker.shouldClearInterimTarget(
+                new WorldPoint(2973, 3350, 0),
+                new WorldPoint(2960, 3343, 0),
+                1_000L,
+                4_900L,
+                5_000L,
+                6));
+    }
+
+    /** Rounding a wall costs a few tiles and must not abandon a checkpoint still being approached. */
+    @Test
+    public void shouldClearInterimTarget_detourWithinMargin_returnsFalse() {
+        assertFalse(Rs2Walker.shouldClearInterimTarget(
+                new WorldPoint(2890, 3396, 0),
+                new WorldPoint(2880, 3396, 0),
+                1_000L,
+                4_900L,
+                5_000L,
+                8));
+    }
+
+    /** Unknown best distance leaves the abandon check inert — behaviour matches the 5-arg form. */
+    @Test
+    public void shouldClearInterimTarget_unknownBestDistance_returnsFalse() {
+        assertFalse(Rs2Walker.shouldClearInterimTarget(
+                new WorldPoint(2890, 3396, 0),
+                new WorldPoint(2880, 3396, 0),
+                1_000L,
+                4_900L,
+                5_000L,
+                Integer.MAX_VALUE));
     }
 
     @Test
@@ -1563,6 +1720,76 @@ public class Rs2WalkerUnitTest {
                 new WorldPoint(2465, 3493, 0),
                 new WorldPoint(2465, 3494, 0),
                 new WorldPoint(2465, 3493, 0)));
+    }
+
+    @Test
+    public void transportSettle_endsOnceArrivedAndIdle() {
+        // The fix for the fixed ~900ms post-transport freeze: standing at the planned destination,
+        // neither moving nor animating, past the one-tick floor => the settle is OVER.
+        WorldPoint dest = new WorldPoint(3205, 3209, 0);
+        assertFalse("arrived and idle must end the settle",
+                Rs2Walker.transportSettlePending(400L, dest, dest, false, false));
+        // ... including standing one tile off the exact destination tile.
+        assertFalse(Rs2Walker.transportSettlePending(400L, new WorldPoint(3206, 3209, 0), dest, false, false));
+    }
+
+    @Test
+    public void transportSettle_holdsWhileTravelingOrWithinFloor() {
+        WorldPoint dest = new WorldPoint(3205, 3209, 0);
+        // within the one-tick floor: always settling, even if already at the destination
+        assertTrue(Rs2Walker.transportSettlePending(100L, dest, dest, false, false));
+        // mid-travel (moving) at the destination tile: still settling
+        assertTrue(Rs2Walker.transportSettlePending(400L, dest, dest, true, false));
+        // still animating (stairs/ship): still settling
+        assertTrue(Rs2Walker.transportSettlePending(400L, dest, dest, false, true));
+        // far from the destination: still settling until the ceiling
+        assertTrue(Rs2Walker.transportSettlePending(400L, new WorldPoint(3300, 3300, 0), dest, false, false));
+        // ceiling passed: settle over regardless
+        assertFalse(Rs2Walker.transportSettlePending(901L, new WorldPoint(3300, 3300, 0), dest, false, false));
+    }
+
+    @Test
+    public void transportSettle_unknownDestinationFallsBackToHalfWindow() {
+        assertTrue(Rs2Walker.transportSettlePending(400L, new WorldPoint(3205, 3209, 0), null, false, false));
+        assertFalse(Rs2Walker.transportSettlePending(500L, new WorldPoint(3205, 3209, 0), null, false, false));
+    }
+
+    @Test
+    public void shouldBlacklistDoorAfterWrongTraversal_sampledWhileMoving_returnsFalse() {
+        // The Wydin's-shop poisoning: the interact walked the player toward the door, the progress wait
+        // sampled MID-WALK (after=3012,3211 with the player still moving), and the walker blacklisted —
+        // and learn-persisted — the shop's front door as permanently blocked. A same-plane sample taken
+        // while the player is walking is a point along the path, never a traversal verdict.
+        assertFalse("mid-walk sample must not blacklist the door",
+                Rs2Walker.shouldBlacklistDoorAfterWrongTraversal(
+                        new WorldPoint(3008, 3207, 0),   // before: en route toward the door
+                        new WorldPoint(3012, 3211, 0),   // after: still walking
+                        new WorldPoint(3012, 3204, 0),
+                        new WorldPoint(3011, 3204, 0),
+                        true));
+    }
+
+    @Test
+    public void shouldBlacklistDoorAfterWrongTraversal_settledWrongWayDisplacement_stillBlacklists() {
+        // Same shape of movement, but the player has STOPPED: a door that displaced the player the wrong
+        // way and left them settled there is a genuine wrong traversal — the original blacklist case.
+        assertTrue(Rs2Walker.shouldBlacklistDoorAfterWrongTraversal(
+                new WorldPoint(3011, 3205, 0),           // started beside the edge
+                new WorldPoint(3016, 3206, 0),           // settled 5 tiles away on the wrong side
+                new WorldPoint(3012, 3204, 0),
+                new WorldPoint(3011, 3204, 0),
+                false));
+    }
+
+    @Test
+    public void shouldBlacklistDoorAfterWrongTraversal_planeChangeTrustedEvenWhileMoving() {
+        // A plane change cannot come from walking — the door acted. Trusted regardless of motion state.
+        assertTrue(Rs2Walker.shouldBlacklistDoorAfterWrongTraversal(
+                new WorldPoint(3011, 3205, 0),
+                new WorldPoint(3011, 3205, 1),
+                new WorldPoint(3012, 3204, 0),
+                new WorldPoint(3011, 3204, 0),
+                true));
     }
 
     @Test

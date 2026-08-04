@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -85,6 +86,61 @@ public class BankedTransportItemPlanningTest {
             assertFalse("a transport requiring nothing must never trigger a bank trip: " + describe(t),
                     Rs2WalkerBankingPlanner.planningCoversPlainTransport(t));
         }
+    }
+
+    /**
+     * Pure currency transports (charter fares, magic carpets, the Shantay coin row) have EMPTY
+     * itemIdRequirements — the withdrawal-quantity collector's item loop never ran for them, so their
+     * coins were never withdrawn at the bank and the post-bank replan dropped the transport ("banked
+     * walking does not withdraw gold"). Every real currency transport in the catalog must contribute its
+     * fare to the withdrawal map, and fares must SUM across multiple currency hops.
+     */
+    @Test
+    public void pureCurrencyFaresEnterTheWithdrawalMap() {
+        List<Transport> pureCurrency = all.stream()
+                .filter(t -> t.getCurrencyAmount() > 0)
+                .filter(t -> "Coins".equalsIgnoreCase(t.getCurrencyName()))
+                .filter(t -> t.getItemIdRequirements() == null || t.getItemIdRequirements().isEmpty())
+                // Match the collector's own type gate, or this can pick a catalog row the collector
+                // never considers and fail for a reason the test is not about.
+                .filter(t -> Rs2WalkerBankingPlanner.isCurrencyBasedTransport(t.getType()))
+                .collect(Collectors.toList());
+        assertFalse("precondition: the catalog has pure coin-fare transports (charters etc.)",
+                pureCurrency.isEmpty());
+
+        Transport one = pureCurrency.get(0);
+        java.util.Map<Integer, Integer> map =
+                Rs2WalkerBankingPlanner.getMissingTransportItemIdsWithQuantities(java.util.List.of(one));
+        assertTrue("a pure coin fare must appear in the withdrawal map: " + describe(one),
+                map.getOrDefault(net.runelite.api.gameval.ItemID.COINS, 0) >= one.getCurrencyAmount());
+
+        java.util.Map<Integer, Integer> summed =
+                Rs2WalkerBankingPlanner.getMissingTransportItemIdsWithQuantities(java.util.List.of(one, one));
+        assertTrue("fares must sum across currency hops",
+                summed.getOrDefault(net.runelite.api.gameval.ItemID.COINS, 0) >= one.getCurrencyAmount() * 2);
+    }
+
+    /**
+     * An item-gated row whose item the bank cannot supply, but which is vendor-purchasable at the
+     * transport (the Shantay ticket row): the planner must withdraw the FARE, not request an item
+     * the withdrawal step can never satisfy. Headless bank counts read as zero, which is exactly
+     * the "not banked" case.
+     */
+    @Test
+    public void unbankedPurchasableItemFallsBackToItsFare() {
+        Transport ticketRow = all.stream()
+                .filter(t -> t.getObjectId() == 4031)
+                .filter(t -> t.getItemIdRequirements() != null && !t.getItemIdRequirements().isEmpty())
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("catalog should contain the Shantay ticket row"));
+
+        java.util.Map<Integer, Integer> map =
+                Rs2WalkerBankingPlanner.getMissingTransportItemIdsWithQuantities(java.util.List.of(ticketRow));
+
+        assertEquals("the planner must withdraw exactly one 5-coin fare",
+                5, map.getOrDefault(net.runelite.api.gameval.ItemID.COINS, 0).intValue());
+        assertFalse("the unbankable ticket itself must not be requested",
+                map.containsKey(1854));
     }
 
     /** Currency-bearing transports kept their existing eligibility. */

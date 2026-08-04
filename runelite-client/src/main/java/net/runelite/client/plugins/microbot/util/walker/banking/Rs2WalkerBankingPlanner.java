@@ -9,6 +9,7 @@ import net.runelite.client.plugins.microbot.shortestpath.pathfinder.Pathfinder;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.walker.Rs2PathApi;
+import net.runelite.client.plugins.microbot.shortestpath.PurchasableItemCatalog;
 import net.runelite.client.plugins.microbot.shortestpath.Transport;
 import net.runelite.client.plugins.microbot.shortestpath.TransportType;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
@@ -174,6 +175,25 @@ public final class Rs2WalkerBankingPlanner {
                 return;
             }
 
+            // Pure currency transports (charter fares, magic carpets, the Shantay 5-coin gate row) have
+            // EMPTY itemIdRequirements, so the item loop below never runs for them — their coins were
+            // never added to the withdrawal map. The transport was correctly detected as missing, but the
+            // fare was never fetched: the post-bank replan (inventory-only) then dropped the transport and
+            // produced the long overland route ("banked walking does not withdraw gold"). Sum fares across
+            // every currency transport on the route.
+            if (isCurrencyBasedTransport(transport.getType())
+                    && transport.getCurrencyAmount() > 0
+                    && (transport.getItemIdRequirements() == null || transport.getItemIdRequirements().isEmpty())) {
+                int currencyItemId = getCurrencyItemId(transport.getCurrencyName());
+                if (currencyItemId > 0) {
+                    int currentQuantity = itemQuantityMap.getOrDefault(currencyItemId, 0);
+                    itemQuantityMap.put(currencyItemId, currentQuantity + transport.getCurrencyAmount());
+                    log.debug("Added currency fare requirement: itemId={} x{} for {}",
+                            currencyItemId, transport.getCurrencyAmount(), transport.getType());
+                }
+                return;
+            }
+
             if (transport.getItemIdRequirements() != null) {
                 for (Set<Integer> alternativeItems : transport.getItemIdRequirements()) {
                     int requiredQuantity = (isCurrencyBasedTransport(transport.getType()) && transport.getCurrencyAmount() > 0)
@@ -195,6 +215,27 @@ public final class Rs2WalkerBankingPlanner {
                         }
                     }
 
+                    // The bank holds none of the alternatives — withdrawing the item is impossible.
+                    // If one of them is vendor-purchasable at its transport (the Shantay pass
+                    // pattern), withdraw the fare instead so the buy-at-transport step can run.
+                    if (preferredItemId != null && preferredBankQuantity == 0) {
+                        PurchasableItemCatalog.PurchasableItem purchasable = alternativeItems.stream()
+                                .map(PurchasableItemCatalog::byItemId)
+                                .filter(java.util.Objects::nonNull)
+                                .findFirst()
+                                .orElse(null);
+                        int currencyItemId = purchasable == null ? -1 : getCurrencyItemId(purchasable.costCurrencyName);
+                        if (currencyItemId > 0) {
+                            // One fare per required ITEM. requiredQuantity above is a currency
+                            // amount for currency-based rows, so it must not be used as a count.
+                            int itemsNeeded = isCurrencyBasedTransport(transport.getType()) ? 1 : requiredQuantity;
+                            int fare = purchasable.costAmount * itemsNeeded;
+                            itemQuantityMap.merge(currencyItemId, fare, Integer::sum);
+                            log.debug("Transport item {} not banked but purchasable — withdrawing fare {} x{} instead",
+                                    purchasable.itemId, purchasable.costCurrencyName, fare);
+                            break;
+                        }
+                    }
                     if (preferredItemId != null) {
                         int currentQuantity = itemQuantityMap.getOrDefault(preferredItemId, 0);
                         itemQuantityMap.put(preferredItemId, currentQuantity + requiredQuantity);
@@ -424,7 +465,8 @@ public final class Rs2WalkerBankingPlanner {
         return runeRequirements;
     }
 
-    private static boolean isCurrencyBasedTransport(TransportType transportType) {
+    /** Package-private so the planning tests can select the same rows this collector accepts. */
+    static boolean isCurrencyBasedTransport(TransportType transportType) {
         return transportType == TransportType.BOAT
                 || transportType == TransportType.CHARTER_SHIP
                 || transportType == TransportType.SHIP
