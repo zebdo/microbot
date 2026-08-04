@@ -28,6 +28,11 @@ import java.util.Arrays;
 @Slf4j
 public final class MenuActionAsmResolver {
 
+    static final String MENU_ACTION_DESCRIPTOR_RUNELITE =
+            "(IILnet/runelite/api/MenuAction;IILjava/lang/String;Ljava/lang/String;)V";
+    private static final String MENU_ACTION_DESCRIPTOR_VANILLA_PREFIX =
+            "(IIIIIILjava/lang/String;Ljava/lang/String;II";
+
     public static final class Resolution {
         public final Method method;
         public final Object garbageValue;
@@ -42,9 +47,6 @@ public final class MenuActionAsmResolver {
     }
 
     public static Resolution resolve(Class<?> clientClazz) throws Exception {
-        final String MENU_ACTION_DESCRIPTOR_VANILLA = "(IIIIIILjava/lang/String;Ljava/lang/String;III)V";
-        final String MENU_ACTION_DESCRIPTOR_RUNELITE = "(IILnet/runelite/api/MenuAction;IILjava/lang/String;Ljava/lang/String;)V";
-
         ClassReader classReader = new ClassReader(clientClazz.getName());
         ClassNode classNode = new ClassNode(Opcodes.ASM9);
         classReader.accept(classNode, ClassReader.SKIP_FRAMES);
@@ -74,13 +76,11 @@ public final class MenuActionAsmResolver {
             }
 
             MethodInsnNode methodInsn = (MethodInsnNode) insnNode.getNext();
-            if (!methodInsn.desc.equals(MENU_ACTION_DESCRIPTOR_VANILLA)) {
-                throw new RuntimeException("Menu action descriptor vanilla has changed from: "
-                        + MENU_ACTION_DESCRIPTOR_VANILLA + " to: " + methodInsn.desc);
-            }
+            if (!isVanillaMenuActionDescriptor(methodInsn.desc)) continue;
 
             Method method = Arrays.stream(Class.forName(methodInsn.owner).getDeclaredMethods())
-                    .filter(m -> m.getName().equals(methodInsn.name))
+                    .filter(m -> m.getName().equals(methodInsn.name)
+                            && org.objectweb.asm.Type.getMethodDescriptor(m).equals(methodInsn.desc))
                     .findFirst()
                     .orElse(null);
 
@@ -89,5 +89,22 @@ public final class MenuActionAsmResolver {
         }
 
         return null;
+    }
+
+    /**
+     * The last argument is the obfuscator's garbage value. Its integral type can
+     * change between client revisions (RuneLite 1.12.34.1 changed it from int to
+     * byte), while the actual menu-action arguments remain stable.
+     */
+    static boolean isVanillaMenuActionDescriptor(String descriptor) {
+        if (descriptor == null
+                || !descriptor.startsWith(MENU_ACTION_DESCRIPTOR_VANILLA_PREFIX)
+                || !descriptor.endsWith(")V")) {
+            return false;
+        }
+
+        String garbageDescriptor = descriptor.substring(
+                MENU_ACTION_DESCRIPTOR_VANILLA_PREFIX.length(), descriptor.length() - 2);
+        return garbageDescriptor.length() == 1 && "BSIJ".contains(garbageDescriptor);
     }
 }
