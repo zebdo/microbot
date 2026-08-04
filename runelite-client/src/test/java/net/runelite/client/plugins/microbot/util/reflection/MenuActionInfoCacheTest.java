@@ -189,6 +189,33 @@ public class MenuActionInfoCacheTest {
     }
 
     @Test
+    public void normalizesGarbageWrapperToDescriptorType() {
+        Properties props = new Properties();
+        props.setProperty(MenuActionInfoCache.KEY_OWNER, MenuActionInfoCacheTest.class.getName());
+        props.setProperty(MenuActionInfoCache.KEY_METHOD, "markerMethod");
+        props.setProperty(MenuActionInfoCache.KEY_DESCRIPTOR, CURRENT_MENU_ACTION_DESCRIPTOR);
+        props.setProperty(MenuActionInfoCache.KEY_GARBAGE_KIND, "Integer");
+        props.setProperty(MenuActionInfoCache.KEY_GARBAGE_VALUE, "127");
+
+        MenuActionAsmResolver.Resolution r = MenuActionInfoCache.resolveProps(props, "test");
+
+        assertNotNull(r);
+        assertEquals(Byte.valueOf((byte) 127), r.garbageValue);
+    }
+
+    @Test
+    public void rejectsGarbageOutsideDescriptorTypeRange() {
+        Properties props = new Properties();
+        props.setProperty(MenuActionInfoCache.KEY_OWNER, MenuActionInfoCacheTest.class.getName());
+        props.setProperty(MenuActionInfoCache.KEY_METHOD, "markerMethod");
+        props.setProperty(MenuActionInfoCache.KEY_DESCRIPTOR, CURRENT_MENU_ACTION_DESCRIPTOR);
+        props.setProperty(MenuActionInfoCache.KEY_GARBAGE_KIND, "Integer");
+        props.setProperty(MenuActionInfoCache.KEY_GARBAGE_VALUE, "128");
+
+        assertNull(MenuActionInfoCache.resolveProps(props, "test"));
+    }
+
+    @Test
     public void bundledLoaderResolvesAgainstTheShippedClientJar() {
         // The repo ships a build-time generated menu-action-info.properties and the
         // injected-client jar is on the test runtime classpath, so loadBundled() must

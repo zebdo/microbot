@@ -30,9 +30,6 @@ public final class MenuActionAsmResolver {
 
     static final String MENU_ACTION_DESCRIPTOR_RUNELITE =
             "(IILnet/runelite/api/MenuAction;IILjava/lang/String;Ljava/lang/String;)V";
-    private static final String MENU_ACTION_DESCRIPTOR_VANILLA_PREFIX =
-            "(IIIIIILjava/lang/String;Ljava/lang/String;II";
-
     public static final class Resolution {
         public final Method method;
         public final Object garbageValue;
@@ -76,7 +73,10 @@ public final class MenuActionAsmResolver {
             }
 
             MethodInsnNode methodInsn = (MethodInsnNode) insnNode.getNext();
-            if (!isVanillaMenuActionDescriptor(methodInsn.desc)) continue;
+            if (!MenuActionDescriptor.isVanilla(methodInsn.desc)) continue;
+
+            garbage = MenuActionDescriptor.normalizeGarbage(garbage, methodInsn.desc);
+            if (garbage == null) return null;
 
             Method method = Arrays.stream(Class.forName(methodInsn.owner).getDeclaredMethods())
                     .filter(m -> m.getName().equals(methodInsn.name)
@@ -84,27 +84,11 @@ public final class MenuActionAsmResolver {
                     .findFirst()
                     .orElse(null);
 
-            if (method == null || garbage == null) return null;
+            if (method == null) return null;
             return new Resolution(method, garbage);
         }
 
         return null;
     }
 
-    /**
-     * The last argument is the obfuscator's garbage value. Its integral type can
-     * change between client revisions (RuneLite 1.12.34.1 changed it from int to
-     * byte), while the actual menu-action arguments remain stable.
-     */
-    static boolean isVanillaMenuActionDescriptor(String descriptor) {
-        if (descriptor == null
-                || !descriptor.startsWith(MENU_ACTION_DESCRIPTOR_VANILLA_PREFIX)
-                || !descriptor.endsWith(")V")) {
-            return false;
-        }
-
-        String garbageDescriptor = descriptor.substring(
-                MENU_ACTION_DESCRIPTOR_VANILLA_PREFIX.length(), descriptor.length() - 2);
-        return garbageDescriptor.length() == 1 && "BSIJ".contains(garbageDescriptor);
-    }
 }

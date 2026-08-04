@@ -98,7 +98,10 @@ public final class MenuActionResourceSeeder {
                 }
 
                 MethodInsnNode mi = (MethodInsnNode) insn.getNext();
-                if (!MenuActionAsmResolver.isVanillaMenuActionDescriptor(mi.desc)) continue;
+                if (!MenuActionDescriptor.isVanilla(mi.desc)) continue;
+
+                garbage = MenuActionDescriptor.normalizeGarbage(garbage, mi.desc);
+                if (garbage == null) return null;
 
                 String owner = mi.owner.replace('/', '.');
                 return new Raw(owner, mi.name, mi.desc, garbage);

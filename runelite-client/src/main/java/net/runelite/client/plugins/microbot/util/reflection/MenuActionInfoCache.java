@@ -36,9 +36,6 @@ public final class MenuActionInfoCache {
 
     static final String BUNDLED_RESOURCE = "menu-action-info.properties";
 
-    private static final String VANILLA_DESCRIPTOR_PREFIX =
-            "(IIIIIILjava/lang/String;Ljava/lang/String;II";
-
     private MenuActionInfoCache() {
     }
 
@@ -95,7 +92,7 @@ public final class MenuActionInfoCache {
             return null;
         }
 
-        if (!isVanillaMenuActionDescriptor(descriptor)) {
+        if (!MenuActionDescriptor.isVanilla(descriptor)) {
             log.info("menu-action cache ignored ({}): stored descriptor '{}' is not a supported menu action", source, descriptor);
             return null;
         }
@@ -103,6 +100,13 @@ public final class MenuActionInfoCache {
         Object garbage = decodeGarbage(garbageKind, garbageValueRaw);
         if (garbage == null) {
             log.info("menu-action cache ignored ({}): unrecognised garbage kind '{}'", source, garbageKind);
+            return null;
+        }
+
+        garbage = MenuActionDescriptor.normalizeGarbage(garbage, descriptor);
+        if (garbage == null) {
+            log.info("menu-action cache ignored ({}): garbage value '{}' is invalid for descriptor '{}'",
+                    source, garbageValueRaw, descriptor);
             return null;
         }
 
@@ -170,18 +174,6 @@ public final class MenuActionInfoCache {
         } catch (NumberFormatException e) {
             return null;
         }
-    }
-
-    private static boolean isVanillaMenuActionDescriptor(String descriptor) {
-        if (descriptor == null
-                || !descriptor.startsWith(VANILLA_DESCRIPTOR_PREFIX)
-                || !descriptor.endsWith(")V")) {
-            return false;
-        }
-
-        String garbageDescriptor = descriptor.substring(
-                VANILLA_DESCRIPTOR_PREFIX.length(), descriptor.length() - 2);
-        return garbageDescriptor.length() == 1 && "BSIJ".contains(garbageDescriptor);
     }
 
     private static void applyUserOnlyPerms(Path path) {

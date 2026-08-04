@@ -50,7 +50,7 @@ import static org.lwjgl.opengl.GL33C.*;
 class Zone
 {
 	// Zone vertex format
-	// index 0: short vec3(x, y, z)
+	// index 0: short vec4(x, y, z, w)
 	// index 1: int abhsl
 	// index 2: short vec4(id, u, v, 0)
 	static final int VERT_SIZE = 20;
