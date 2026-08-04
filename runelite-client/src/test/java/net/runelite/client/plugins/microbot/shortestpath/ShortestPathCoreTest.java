@@ -274,7 +274,7 @@ public class ShortestPathCoreTest {
 	@Test
 	public void testPathfinderRoutesAroundAlKharidMine() {
 		WorldPoint start = new WorldPoint(AL_KHARID_MINE_MIN_X - 1, 3164, 0);
-		WorldPoint target = new WorldPoint(AL_KHARID_MINE_MAX_X + 1, 3164, 0);
+		WorldPoint target = new WorldPoint(AL_KHARID_MINE_MAX_X + 5, 3164, 0);
 		Pathfinder pathfinder = new Pathfinder(createMinimalConfig(), start, target);
 
 		pathfinder.run();
@@ -282,6 +282,7 @@ public class ShortestPathCoreTest {
 		List<WorldPoint> path = pathfinder.getPath();
 		assertTrue("Route around Al Kharid mine should complete", pathfinder.isDone());
 		assertFalse("Route around Al Kharid mine should not be empty", path.isEmpty());
+		assertEquals("Route should reach the target", target, path.get(path.size() - 1));
 		assertFalse("Route must not enter the open pit",
 				path.stream().anyMatch(ShortestPathCoreTest::isInsideAlKharidMine));
 	}
