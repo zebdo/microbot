@@ -8,6 +8,7 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
+import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.api.IEntity;
 import net.runelite.client.plugins.microbot.api.boat.Rs2BoatCache;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
@@ -208,9 +209,16 @@ public class Rs2TileObjectModel implements TileObject, IEntity {
         }
 
         // Walls, ground decorations and decorative objects occupy a single tile and carry no
-        // sizeX/sizeY, so the area helper above does not apply. Their own tile is the one you stand
-        // on or beside, and the tile test is the honest answer for them.
-        return IEntity.super.isReachable();
+        // sizeX/sizeY, so the area helper above does not apply. Their own tile is the one to test.
+        //
+        // Rs2Tile.isTileReachable and NOT IEntity.super.isReachable(): the latter is
+        // Rs2Reachable.isReachable(p), which traverses FROM p and then asks whether p is in the
+        // result. That never consults the player, so it answers "is this tile part of some walkable
+        // region" rather than "can I get to it", and a walkable tile inside a locked room passes.
+        // isTileReachable traverses from Rs2Player.getLocalLocation() to the tile, which is the
+        // question being asked, and is the same check the GameObject branch above ends up making
+        // through Rs2GameObject.isReachable.
+        return Rs2Tile.isTileReachable(getWorldLocation());
     }
 
     public boolean click() {
