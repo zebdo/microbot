@@ -7,6 +7,7 @@ import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.api.IEntity;
 import net.runelite.client.plugins.microbot.api.boat.Rs2BoatCache;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
@@ -190,10 +191,25 @@ public class Rs2TileObjectModel implements TileObject, IEntity {
             return false;
         }
 
-        if (objectWorldView.getId() == playerWorldView.getId()) {
-            return true;
+        // Objects in different world views are not connected by walking, so there is no path.
+        if (objectWorldView.getId() != playerWorldView.getId()) {
+            return false;
         }
 
+        // Ask whether a tile BESIDE this object can be stood on - not whether the object's own
+        // tile can be. You interact with a booth, a tree or a rock from an adjacent tile and never
+        // from the tile it occupies, so a solid object's own tile is never walkable and the
+        // IEntity default (Rs2Reachable on getWorldLocation()) answers "no" for every one of them.
+        // Rs2GameObject.isReachable asks the right question: it builds the object's WorldArea from
+        // its size, takes the interactable tiles around it, and looks for one that is walkable and
+        // reachable. Reused here rather than reimplemented so the two paths cannot drift.
+        if (tileObject instanceof GameObject) {
+            return Rs2GameObject.isReachable((GameObject) tileObject);
+        }
+
+        // Walls, ground decorations and decorative objects occupy a single tile and carry no
+        // sizeX/sizeY, so the area helper above does not apply. Their own tile is the one you stand
+        // on or beside, and the tile test is the honest answer for them.
         return IEntity.super.isReachable();
     }
 
