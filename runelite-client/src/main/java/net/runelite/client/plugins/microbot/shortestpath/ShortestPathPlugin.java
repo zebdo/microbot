@@ -152,7 +152,8 @@ public class ShortestPathPlugin extends Plugin {
     @Inject
     private ETAOverlayPanel etaOverlayPanel;
 
-    private final WalkingNoticeOverlay walkingNoticeOverlay;
+    @Inject
+    private WalkingNoticeOverlay walkingNoticeOverlay;
 
     @Inject
     private SpriteManager spriteManager;
@@ -227,7 +228,9 @@ public class ShortestPathPlugin extends Plugin {
         return configManager.getConfig(ShortestPathConfig.class);
     }
 
-    @Inject
+    public ShortestPathPlugin() {
+    }
+
     public ShortestPathPlugin(WalkingNoticeOverlay walkingNoticeOverlay) {
         this.walkingNoticeOverlay = walkingNoticeOverlay;
     }
