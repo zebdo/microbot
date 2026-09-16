@@ -320,3 +320,9 @@ if (mapComponent < 0) {
 **Where this applies:** `Rs2Walker.handleTransports`, specialized transport handlers, and shortest-path transport resource additions.
 
 **Defensive check:** Add pure unit tests for exact item-action recognition and for every supported origin-object-to-interface mapping, plus a loader test proving required item and unlock fields survive TSV parsing.
+
+## 15. Apply the same click guards to every route entry point
+
+Direct and fallback scene clicks must validate the projected click area against the viewport on the client thread. Reuse the validated canvas point when dispatching the click. An on-screen tile check alone can still produce a point outside the usable viewport.
+
+Checkpoint handoffs in the main click branch must use the same close/expiry policy as the start-of-pass check. In particular, entering the preclick distance while moving does not bypass the retarget cooldown.

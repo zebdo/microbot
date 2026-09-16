@@ -2922,6 +2922,12 @@ public class Rs2Walker {
 								routeState.interimLastRetargetAtMs = 0L;
 							}
 						}
+                        // Keep the same cooldown/expiry policy used at the start of the walk pass.
+                        if (Rs2Player.isMoving() && !clearInterimTargetIfReachedOrExpired(
+                                Rs2Player.getWorldLocation(), path, System.currentTimeMillis())) {
+                            exit = WalkExit.INTERIM_IN_FLIGHT_CLICK;
+                            break;
+                        }
 						// Close enough: allow selecting a new checkpoint.
 						routeState.interimTargetWp = null;
 						routeState.interimTargetIdx = -1;

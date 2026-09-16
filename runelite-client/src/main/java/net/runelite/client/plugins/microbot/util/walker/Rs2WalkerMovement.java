@@ -872,19 +872,12 @@ final class Rs2WalkerMovement {
     }
 
     static boolean walkFastCanvasOnScreenOnly(WorldPoint worldPoint, boolean toggleRun) {
-        LocalPoint localPoint = localPointForWorld(worldPoint);
-        if (localPoint == null || !Rs2Camera.isTileOnScreen(localPoint)) {
+        Point canvasPoint = sceneCanvasPoint(worldPoint);
+        if (canvasPoint == null) {
             return false;
         }
-        Point canvasPoint = Perspective.localToCanvas(
-                Microbot.getClient(),
-                localPoint,
-                Microbot.getClient().getTopLevelWorldView().getPlane());
-        int canvasX = canvasPoint != null ? canvasPoint.getX() : -1;
-        int canvasY = canvasPoint != null ? canvasPoint.getY() : -1;
-        if (canvasX < 0 || canvasY < 0) {
-            return false;
-        }
+        int canvasX = canvasPoint.getX();
+        int canvasY = canvasPoint.getY();
 
         Rs2Player.toggleRunEnergy(toggleRun);
         NewMenuEntry entry = new NewMenuEntry()
@@ -902,23 +895,28 @@ final class Rs2WalkerMovement {
     }
 
     static boolean isSceneCanvasClickable(WorldPoint worldPoint) {
+        return sceneCanvasPoint(worldPoint) != null;
+    }
+
+    private static Point sceneCanvasPoint(WorldPoint worldPoint) {
         if (!Microbot.getClientThread().isClientThread()) {
-            return Microbot.getClientThread().runOnClientThreadOptional(() -> isSceneCanvasClickable(worldPoint))
-                    .orElse(false);
+            return Microbot.getClientThread().runOnClientThreadOptional(() -> sceneCanvasPoint(worldPoint))
+                    .orElse(null);
         }
-            LocalPoint localPoint = localPointForWorld(worldPoint);
-            if (localPoint == null || !Rs2Camera.isTileOnScreen(localPoint)) {
-                return false;
-            }
-            Point canvasPoint = Perspective.localToCanvas(
-                    Microbot.getClient(),
-                    localPoint,
-                    worldPoint.getPlane());
-            Rectangle viewport = new Rectangle(Microbot.getClient().getViewportXOffset(),
-                    Microbot.getClient().getViewportYOffset(), Microbot.getClient().getViewportWidth(),
-                    Microbot.getClient().getViewportHeight());
-            return canvasPoint != null && viewport.contains(
-                    new Rectangle(canvasPoint.getX() - 4, canvasPoint.getY() - 4, 8, 8));
+        LocalPoint localPoint = localPointForWorld(worldPoint);
+        if (localPoint == null || !Rs2Camera.isTileOnScreen(localPoint)) {
+            return null;
+        }
+        Point canvasPoint = Perspective.localToCanvas(
+                Microbot.getClient(), localPoint, worldPoint.getPlane());
+        Rectangle viewport = new Rectangle(Microbot.getClient().getViewportXOffset(),
+                Microbot.getClient().getViewportYOffset(), Microbot.getClient().getViewportWidth(),
+                Microbot.getClient().getViewportHeight());
+        return isCanvasPointInsideViewport(canvasPoint, viewport) ? canvasPoint : null;
+    }
+
+    static boolean isCanvasPointInsideViewport(Point point, Rectangle viewport) {
+        return point != null && viewport.contains(new Rectangle(point.getX() - 4, point.getY() - 4, 8, 8));
     }
 
     static LocalPoint localPointForWorld(WorldPoint worldPoint) {
