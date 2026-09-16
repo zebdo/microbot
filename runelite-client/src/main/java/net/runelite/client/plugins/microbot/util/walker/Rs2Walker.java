@@ -2923,7 +2923,7 @@ public class Rs2Walker {
 							}
 						}
                         // Keep the same cooldown/expiry policy used at the start of the walk pass.
-                        if (Rs2Player.isMoving() && !clearInterimTargetIfReachedOrExpired(
+                        if (routeState.interimTargetWp != null && !clearInterimTargetIfReachedOrExpired(
                                 Rs2Player.getWorldLocation(), path, System.currentTimeMillis())) {
                             exit = WalkExit.INTERIM_IN_FLIGHT_CLICK;
                             break;
