@@ -830,8 +830,6 @@ net.runelite.client.plugins.microbot.util.walker.Rs2WalkerMovement#localPointFor
 net.runelite.client.plugins.microbot.util.walker.Rs2WalkerMovement#localPointForWorld(WorldPoint): LocalPoint  ->  net.runelite.api.coords.LocalPoint#fromWorld(WorldView, WorldPoint): LocalPoint
 net.runelite.client.plugins.microbot.util.walker.Rs2WalkerMovement#staminaThreshold(): int  ->  net.runelite.api.Client#getLocalPlayer(): Player
 net.runelite.client.plugins.microbot.util.walker.Rs2WalkerMovement#staminaThreshold(): int  ->  net.runelite.api.Player#getName(): String
-net.runelite.client.plugins.microbot.util.walker.Rs2WalkerMovement#walkFastCanvasOnScreenOnly(WorldPoint, boolean): boolean  ->  net.runelite.api.Client#getTopLevelWorldView(): WorldView
-net.runelite.client.plugins.microbot.util.walker.Rs2WalkerMovement#walkFastCanvasOnScreenOnly(WorldPoint, boolean): boolean  ->  net.runelite.api.WorldView#getPlane(): int
 net.runelite.client.plugins.microbot.util.walker.Rs2WalkerTransports#adjacentSamePlaneTransportSuppressionPoints(Transport, TileObject): Set  ->  net.runelite.api.TileObject#getWorldLocation(): WorldPoint
 net.runelite.client.plugins.microbot.util.walker.Rs2WalkerTransports#charterWidgetMatchesDestination(Widget, String): boolean  ->  net.runelite.api.widgets.Widget#getActions(): String[]
 net.runelite.client.plugins.microbot.util.walker.Rs2WalkerTransports#charterWidgetMatchesDestination(Widget, String): boolean  ->  net.runelite.api.widgets.Widget#getName(): String

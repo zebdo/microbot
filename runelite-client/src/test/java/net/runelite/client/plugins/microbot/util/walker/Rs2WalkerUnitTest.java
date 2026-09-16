@@ -1927,6 +1927,36 @@ public class Rs2WalkerUnitTest {
     }
 
     @Test
+    public void interimPreclickKeepsCheckpointUntilCooldownExpires() {
+        Rs2WalkerMovement.clearInterimTarget("test setup");
+        WorldPoint interim = new WorldPoint(3206, 3200, 0);
+        WorldPoint player = new WorldPoint(3200, 3200, 0);
+        Rs2Walker.routeState.interimTargetWp = interim;
+        Rs2Walker.routeState.interimSetAtMs = 1000L;
+        Rs2Walker.routeState.interimLastProgressAtMs = 1000L;
+        try {
+            assertFalse(Rs2WalkerMovement.clearInterimTargetIfReachedOrExpired(player,
+                    Collections.emptyList(), 1899L));
+            assertEquals(interim, Rs2Walker.routeState.interimTargetWp);
+            assertTrue(Rs2WalkerMovement.clearInterimTargetIfReachedOrExpired(player,
+                    Collections.emptyList(), 1900L));
+            assertNull(Rs2Walker.routeState.interimTargetWp);
+        } finally {
+            Rs2WalkerMovement.clearInterimTarget("test cleanup");
+        }
+    }
+
+    @Test
+    public void sceneClickRequiresEntireClickAreaInsideViewport() {
+        java.awt.Rectangle viewport = new java.awt.Rectangle(10, 20, 500, 300);
+        assertTrue(Rs2WalkerMovement.isCanvasPointInsideViewport(new net.runelite.api.Point(250, 150), viewport));
+        assertFalse(Rs2WalkerMovement.isCanvasPointInsideViewport(new net.runelite.api.Point(700, 150), viewport));
+        assertFalse(Rs2WalkerMovement.isCanvasPointInsideViewport(new net.runelite.api.Point(12, 150), viewport));
+        assertFalse(Rs2WalkerMovement.isCanvasPointInsideViewport(new net.runelite.api.Point(250, 318), viewport));
+        assertFalse(Rs2WalkerMovement.isCanvasPointInsideViewport(null, viewport));
+    }
+
+    @Test
     public void interimPreclickTiles_runHandsOffEarlierThanWalk() {
         assertEquals(6, Rs2WalkerMovement.interimPreclickTiles(false));
         assertEquals(8, Rs2WalkerMovement.interimPreclickTiles(true));
